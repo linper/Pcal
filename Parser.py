@@ -1,9 +1,10 @@
+import re
 
-
-class f_tree:
+class FTtree:
     def __init__(self, data):
         self.data = data
         self.left = None
         self.right = None
 
-    
+
+def parse(s):
