@@ -2,6 +2,8 @@ import math
 import sys
 import re
 import function as f
+from os import system
+import pickle
 
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -182,6 +184,31 @@ def rmv(*args, **kwargs):
         raise Exception("variable does not exist")
 
 
+def save(*args, **kwargs):
+    if kwargs.keys().__contains__("file"):
+        name = kwargs.get("file")
+    elif args[0] is not None:
+        name = args[0]
+    else:
+        raise Exception("need file name without extension")
+    with open("saved/" + name + '.pickle', 'wb') as f:
+        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+    print("saved to file: ./saved/" + name + ".pickle")
+
+
+def load(*args, **kwargs):
+    global data
+    if kwargs.keys().__contains__("file"):
+        name = kwargs.get("file")
+    elif args[0] is not None:
+        name = args[0]
+    else:
+        raise Exception("need file name without extension")
+    with open("saved/" + name + '.pickle', 'rb') as f:
+        data = pickle.load(f)
+    print("loaded file: ./saved/" + name + ".pickle")
+
+
 # private
 def __format(container):
     """"format formating output for ls command"""
@@ -199,7 +226,7 @@ def __format(container):
             count += 1
 
 
-built_ins = {"addv": addv, "addf": addf, "close": close, "ls": ls, "rmf": rmf, "rmv": rmv}
+built_ins = {"addv": addv, "addf": addf, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rmf": rmf, "rmv": rmv, "save": save}
 # built_ins_names = [b.__name__ for b in built_ins]
 all_names = []
 data = {"na": all_names, "bi": built_ins, "const": constants, "func": funs, "udf": u_funs, "var": vars}

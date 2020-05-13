@@ -1,5 +1,6 @@
 import exec
 import re
+
 # from sys import maxsize
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -116,7 +117,6 @@ def pass_levels(parent, data, inner, level, params):
                 simple = True
             else:
                 if string == "#":
-                # if re.match(r"[\w]+#", string):
                     inner_taken += 1
                     parent.nodes.append(init_tree(Node(params=params, name=inner[inner_taken - 1]), inner[inner_taken - 1], 0, params))
                     continue
@@ -143,11 +143,11 @@ def pass_levels(parent, data, inner, level, params):
         return parent
 
 
-def params_to_list(parent, data):
-    data.strip(',')
-    par = re.split(r",", data)
-    for p in par:
-        parent.nodes.append(Node(var_from_str(p, par)))
+# def params_to_list(parent, data):
+#     data.strip(',')
+#     par = re.split(r",", data)
+#     for p in par:
+#         parent.nodes.append(Node(var_from_str(p, par)))
 
 
 def add_single(parent, data, params):
