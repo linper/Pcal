@@ -1,7 +1,6 @@
 import exec
 import re
 
-# from sys import maxsize
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
@@ -58,21 +57,43 @@ class Node:
                     return True
         return False
 
+    # def __call__(self, *args, **kwargs):
+    #     """"function tree execution entry point"""
+    #     d = {}
+    #     if isinstance(self.data, Node):
+    #         for k, v in zip(self.data.parameters.keys(), args):
+    #             d.update({k: iterate(v, {})})
+    #         return iterate(self.data, d)
+    #     else:
+    #         return iterate(self, d)
+
     def __call__(self, *args, **kwargs):
         """"function tree execution entry point"""
         d = {}
         if isinstance(self.data, Node):
-            for k, v in zip(self.data.parameters.keys(), args):
-                d.update({k: iterate(v, {})})
-            return iterate(self.data, d)
+            for k, n in zip(self.data.parameters.keys(), self.nodes):
+                d.update({k: iterate(n, args[0])})
+            # d = args[0]
+            return self.data(d)
         else:
-            return iterate(self, d)
+            return iterate(self, args[0])
+
+
+def execute(root):
+    """"function tree execution entry point"""
+    d = {}
+    if isinstance(root.data, Node):
+        for k, v in zip(root.data.parameters.keys(), root.nodes):
+            d.update({k: iterate(v, {})})
+        return root.data(d)
+    else:
+        return iterate(root, d)
 
 
 def iterate(root, params):
     """"one iteration of recursive function execution"""
     if isinstance(root, Node) and isinstance(root.data, Node) and exec.u_funs.get(root.data.name) is not None:
-        return root(*root.nodes)
+        return root(params)
     if len(root.nodes) != 0:
         l = []
         for n in root.nodes:
@@ -271,7 +292,8 @@ def strip_functions(data):
                 r_par_count += 1
                 r_bound = r_indices[r_index]
         for s in fun_list:
-            data = data.replace(s, '#')
+            data = data.replace(s, '#', 1)
+            # data = re.sub(s, '#', data, count=1)
         data = data.replace("|#|", "abs#")
         for s in fun_list:
             f_list.append(s[1: -1])

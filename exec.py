@@ -8,9 +8,10 @@ import pickle
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
+name_pattern = re.compile(r"^[a-zA-Z_][\w_]*")
 
 u_funs = {}
-# fun_names = []
 vars = {}
 
 
@@ -97,12 +98,14 @@ constants = {"e": e, "pi": pi}
 # commands
 def addv(*args, **kwargs):
     """"command to add global variable"""
-    if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
+    if all_names.__contains__(kwargs.get("name")) or all_names.__contains__(args[0]):
+        raise Exception("name already exists")
+    if kwargs.keys().__contains__("name"):
         name = str(kwargs.get("name"))
-    elif len(args) >= 2 and not all_names.__contains__(args[0]):
+    elif len(args) >= 2:
         name = str(args[0])
     else:
-        raise Exception("no name or name already exists")
+        raise Exception("name missing")
     if kwargs.keys().__contains__("value"):
         value = str(kwargs.get("value"))
     elif len(args) >= 2:
@@ -111,10 +114,17 @@ def addv(*args, **kwargs):
         raise Exception("no value")
     if re.fullmatch(number_pattern, value):
         value = f.var_from_str(value)
+    elif re.fullmatch(exec_pattern, value):
+        func = f.Node.init_root("f", value, [])
+        value = func(*func.nodes)
     else:
         raise Exception("value is not a number")
-    vars.update({name: value})
-    all_names.append(name)
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        vars.update({name: value})
+        all_names.append(name)
+    else:
+        raise Exception("bad name pattern")
 
 
 def addf(*args, **kwargs):
@@ -138,9 +148,13 @@ def addf(*args, **kwargs):
         params.append(args[i])
     if len(params) == 0:
         raise Exception("no function arguments")
-    function = f.Node.init_root(name, func, params)
-    u_funs.update({name: (function, len(params))})
-    all_names.append(name)
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        function = f.Node.init_root(name, func, params)
+        u_funs.update({name: (function, len(params))})
+        all_names.append(name)
+    else:
+        raise Exception("bad name pattern")
 
 
 def close(*args, **kwargs):
@@ -163,25 +177,41 @@ def ls(*args, **kwargs):
 def rmf(*args, **kwargs):
     """removes user defined function"""
     if kwargs.keys().__contains__("name") and u_funs.get(kwargs.get("name")) is not None:
-        all_names.remove(kwargs.get("name"))
-        u_funs.pop(kwargs.get("name"), None)
+        # all_names.remove(kwargs.get("name"))
+        name = kwargs.get("name")
+        # u_funs.pop(kwargs.get("name"), None)
     elif u_funs.get(args[0]) is not None:
-        all_names.remove(args[0])
-        u_funs.pop(args[0], None)
+        # all_names.remove(args[0])
+        name = args[0]
+        # u_funs.pop(args[0], None)
     else:
         raise Exception("function does not exist")
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        all_names.remove(name)
+        u_funs.pop(name, None)
+    else:
+        raise Exception("bad name pattern")
 
 
 def rmv(*args, **kwargs):
     """removes variable"""
     if kwargs.keys().__contains__("name") and vars.get(kwargs.get("name")) is not None:
-        all_names.remove(kwargs.get("name"))
-        vars.pop(kwargs.get("name"), None)
+        name = kwargs.get("name")
+        # all_names.remove(kwargs.get("name"))
+        # vars.pop(kwargs.get("name"), None)
     elif vars.get(args[0]) is not None:
-        all_names.remove(args[0])
-        vars.pop(args[0], None)
+        name = args[0]
+        # all_names.remove(args[0])
+        # vars.pop(args[0], None)
     else:
         raise Exception("variable does not exist")
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        all_names.remove(name)
+        vars.pop(name, None)
+    else:
+        raise Exception("bad name pattern")
 
 
 def save(*args, **kwargs):
@@ -198,6 +228,12 @@ def save(*args, **kwargs):
 
 def load(*args, **kwargs):
     global data
+    global all_names
+    global built_ins
+    global constants
+    global funs
+    global u_funs
+    global vars
     if kwargs.keys().__contains__("file"):
         name = kwargs.get("file")
     elif args[0] is not None:
@@ -206,6 +242,12 @@ def load(*args, **kwargs):
         raise Exception("need file name without extension")
     with open("saved/" + name + '.pickle', 'rb') as f:
         data = pickle.load(f)
+        all_names = data.get("na")
+        built_ins = data.get("bi")
+        constants = data.get("const")
+        funs = data.get("func")
+        u_funs = data.get("udf")
+        vars = data.get("var")
     print("loaded file: ./saved/" + name + ".pickle")
 
 

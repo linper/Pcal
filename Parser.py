@@ -3,13 +3,11 @@ from ast import literal_eval
 import exec
 import function as f
 
-import traceback
-
 
 # command_pattern = re.compile(r"^[a-zA-Z0-9_\s]+(\s+[a-zA-Z0-9_-]+\s*)*$")
 func_pattern = re.compile(r"^([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d()+*\-/.,^%!=|&\"_]+\s*)*$")
-assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?[\w\d()+*\-/.,^%!|&\"_]+\s*$") #todo add asignment from udf function execution result
+assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?[\w\d()+*\-/.,^%!|&\"_]+\s*$")
 exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -32,7 +30,7 @@ def parse(line):
             # print("command")
         elif re.match(assignment_pattern, line):
             parts = re.split(r"[\s]+", line.replace(":", " "))
-            if len(parts) == 2 and re.match(number_pattern, parts[1]):
+            if len(parts) == 2 and (re.match(number_pattern, parts[1]) or re.match(exec_pattern, parts[1])):
                 exec.addv(*parts)
             elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
                 exec.addf(*parts)
@@ -55,9 +53,10 @@ def parse(line):
                 # print()
                 result = f.var_from_str(line, force_ex=False)
                 if result is None:
-                    function = f.Node.init_root("f", line, [])
+                    function = f.Node.init_root("temp", line, [])
                     # result = f.execute(function, [])
-                    result = function(*function.nodes)
+                    result = f.execute(function)
+                    # result = function(*function.nodes)
             print(result)
 
             # print("exec")
