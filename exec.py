@@ -2,7 +2,6 @@ import math
 import sys
 import re
 import function as f
-from os import system
 import pickle
 
 param_pattern = re.compile(r"p[\d]+")
@@ -116,7 +115,7 @@ def addv(*args, **kwargs):
         value = f.var_from_str(value)
     elif re.fullmatch(exec_pattern, value):
         func = f.Node.init_root("f", value, [])
-        value = func(*func.nodes)
+        value = f.execute(func)
     else:
         raise Exception("value is not a number")
     name = str(name)
@@ -198,12 +197,8 @@ def rmv(*args, **kwargs):
     """removes variable"""
     if kwargs.keys().__contains__("name") and vars.get(kwargs.get("name")) is not None:
         name = kwargs.get("name")
-        # all_names.remove(kwargs.get("name"))
-        # vars.pop(kwargs.get("name"), None)
     elif vars.get(args[0]) is not None:
         name = args[0]
-        # all_names.remove(args[0])
-        # vars.pop(args[0], None)
     else:
         raise Exception("variable does not exist")
     name = str(name)

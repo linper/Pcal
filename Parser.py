@@ -27,7 +27,6 @@ def parse(line):
                 return
             else:
                 exec.built_ins.get(com)(*args, **kwargs)
-            # print("command")
         elif re.match(assignment_pattern, line):
             parts = re.split(r"[\s]+", line.replace(":", " "))
             if len(parts) == 2 and (re.match(number_pattern, parts[1]) or re.match(exec_pattern, parts[1])):
@@ -35,36 +34,18 @@ def parse(line):
             elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
                 exec.addf(*parts)
         elif re.fullmatch(exec_pattern, line):
-            # if re.fullmatch(udf_pattern, line) and get_udf_name(line) is not None:
-            #     parts = re.split(r"[\s]+", line.replace("(", " ").replace(")", ""))
-            #     if len(parts) == 1 and exec.data.get("var").keys.__contains__(parts[0]):
-            #         print(exec.data.get("var").get(parts[0]))
-            #     elif exec.data.get("udf").keys.__contains__(parts[0]):
-            #         _func = parts.pop(0)
-            #         func = exec.data.get("udf").get(_func)
-            #         print(func(parts[1:len(parts)]))
-            # else:
             if re.fullmatch(number_pattern, line):
                 result = f.var_from_str(line)
             else:
-                # a = {"a": 2, "b":3}
-                # k = a.keys()
-                # v = a.values()
-                # print()
                 result = f.var_from_str(line, force_ex=False)
                 if result is None:
                     function = f.Node.init_root("temp", line, [])
-                    # result = f.execute(function, [])
                     result = f.execute(function)
-                    # result = function(*function.nodes)
             print(result)
-
-            # print("exec")
         else:
             print("syntax error")
     except Exception as e:
         print(str(e))
-        # traceback.print_exc()
 
 
 def get_udf_name(data):
