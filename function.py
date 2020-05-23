@@ -36,11 +36,9 @@ class Node:
         root.name = name
         for i in params:
             root.parameters.update({i: i})
-        # data = swap_std_exp(data)
         root.data_as_str = str(data)
         init_tree(root, data, 0, root.parameters)
         for p in params:
-            # if not root.__contains__(p):
             if not re.search(r"(?:^|[(,+\-*|/])" + p + r"(?:$|[),+\-*|/])", root.data_as_str):
                 raise Exception(f"there is no \"{p}\" in function: {data}")
         return root
@@ -57,15 +55,6 @@ class Node:
                     return True
         return False
 
-    # def __call__(self, *args, **kwargs):
-    #     """"function tree execution entry point"""
-    #     d = {}
-    #     if isinstance(self.data, Node):
-    #         for k, v in zip(self.data.parameters.keys(), args):
-    #             d.update({k: iterate(v, {})})
-    #         return iterate(self.data, d)
-    #     else:
-    #         return iterate(self, d)
 
     def __call__(self, *args, **kwargs):
         """"function tree execution entry point"""
@@ -330,18 +319,15 @@ def var_from_str(data, params=None, force_ex=True):
         elif re.fullmatch(float_pattern, data) or re.fullmatch(std_pattern, data):
             return sign * float(data)
         elif re.fullmatch(hexadecimal_pattern, data):
-            return hex(data)
+            return int(data, base=16)
         elif re.fullmatch(binary_pattern, data):
-            return bin(data)
+            return int(data, base=2)
         elif re.fullmatch(octal_pattern, data):
-            return oct(data)
+            return int(data, base=8)
         else:
             raise Exception("parsing error")
     elif params is not None and params.keys().__contains__(data):
         return sign * params.get(data)
-        # for p in params:
-        #     if data == p:
-        #         return sign * p
     elif exec.data.get("const").keys().__contains__(data):
         return sign * exec.data.get("const").get(data)
     elif exec.data.get("var").keys().__contains__(data):

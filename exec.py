@@ -173,38 +173,23 @@ def ls(*args, **kwargs):
     return
 
 
-def rmf(*args, **kwargs):
-    """removes user defined function"""
+def rm(*args, **kwargs):
+    """removes user defined function or variable"""
     if kwargs.keys().__contains__("name") and u_funs.get(kwargs.get("name")) is not None:
-        # all_names.remove(kwargs.get("name"))
         name = kwargs.get("name")
-        # u_funs.pop(kwargs.get("name"), None)
     elif u_funs.get(args[0]) is not None:
-        # all_names.remove(args[0])
         name = args[0]
-        # u_funs.pop(args[0], None)
-    else:
-        raise Exception("function does not exist")
-    name = str(name)
-    if re.fullmatch(name_pattern, name):
-        all_names.remove(name)
-        u_funs.pop(name, None)
-    else:
-        raise Exception("bad name pattern")
-
-
-def rmv(*args, **kwargs):
-    """removes variable"""
-    if kwargs.keys().__contains__("name") and vars.get(kwargs.get("name")) is not None:
-        name = kwargs.get("name")
     elif vars.get(args[0]) is not None:
         name = args[0]
     else:
-        raise Exception("variable does not exist")
+        raise Exception("function or variable does not exist")
     name = str(name)
     if re.fullmatch(name_pattern, name):
+        if vars.get(name) is not None:
+            vars.pop(name, None)
+        else:
+            u_funs.pop(name, None)
         all_names.remove(name)
-        vars.pop(name, None)
     else:
         raise Exception("bad name pattern")
 
@@ -218,7 +203,7 @@ def save(*args, **kwargs):
         raise Exception("need file name without extension")
     with open("saved/" + name + '.pickle', 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
-    print("saved to file: ./saved/" + name + ".pickle")
+    print("saved to file: ./saved/" + name + ".pkl")
 
 
 def load(*args, **kwargs):
@@ -243,7 +228,7 @@ def load(*args, **kwargs):
         funs = data.get("func")
         u_funs = data.get("udf")
         vars = data.get("var")
-    print("loaded file: ./saved/" + name + ".pickle")
+    print("loaded file: ./saved/" + name + ".pkl")
 
 
 # private
@@ -263,8 +248,7 @@ def __format(container):
             count += 1
 
 
-built_ins = {"addv": addv, "addf": addf, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rmf": rmf, "rmv": rmv, "save": save}
-# built_ins_names = [b.__name__ for b in built_ins]
+built_ins = {"addv": addv, "addf": addf, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
 all_names = []
 data = {"na": all_names, "bi": built_ins, "const": constants, "func": funs, "udf": u_funs, "var": vars}
 data.update({"data": data})
