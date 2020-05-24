@@ -12,6 +12,9 @@ command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d()+*\-/.,^%!=|&\"_]+\s*)*$")
 # assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
 assignment_pattern = re.compile(r"^[\w\s_]+:\s?(([\w\s()\[\]+*\-/.,^%!|&\"_]+)|(\[[\w\s()\[\]+*\-/.,^%!|&\"_]+\]))\s*$")
 list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+# list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+# list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -38,7 +41,7 @@ def parse(line):
                 if len(list_comps) == 1:
                     lst_var = lst.make_list(list_comps[0])
                     exec.addl(parts[0], lst_var)
-                    print(lst_var)
+                    # print(lst_var)
                 elif len(list_comps) == 2:
                     print("iterative var addition not implemented")
                 elif len(list_comps) >= 3:
@@ -60,6 +63,9 @@ def parse(line):
                 if result is None:
                     function = f.Node.init_root("temp", line, [])
                     result = f.execute(function)
+            print(result)
+        elif re.fullmatch(list_exec_pattern, line):
+            result = lst.make_list(lst.separate_list_comp(line, clean=True)[1][0])
             print(result)
         else:
             print("syntax error")

@@ -250,7 +250,7 @@ def load(*args, **kwargs):
     with open("saved/" + name + '.pickle', 'rb') as f:
         data = pickle.load(f)
         all_names = data.get("na")
-        commands = data.get("bi")
+        commands = data.get("cmd")
         constants = data.get("const")
         funs = data.get("func")
         u_funs = data.get("udf")

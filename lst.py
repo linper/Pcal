@@ -5,7 +5,13 @@ import temp_pool as tp
 
 exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 enum_pattern = re.compile(r"\d[\d,]*")
+list_exec_pattern_no_sp = re.compile(r"^\[[\w()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_comp_pattern = re.compile(r"^[\s#]+$")
+basic_list_pattern = re.compile(r"^\[.+\]\s*$")
+number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
+                            r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
+list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+
 in_pattern = re.compile(r"\s(?:in)\s")
 for_pattern = re.compile(r"\s(?:for)\s")
 if_pattern = re.compile(r"(\s(?:if)\s)")
@@ -14,8 +20,21 @@ else_pattern = re.compile(r"(\s(?:else)\s)")
 
 def make_list(data_string):
     data, f_list = separate_list_comp(data_string)
-    if re.fullmatch(enum_pattern, data_string):
-        return re.split(',', data_string)
+    if re.fullmatch(basic_list_pattern, "[" + data_string + "]") and not re.fullmatch(list_exec_pattern, "[" + data_string + "]"):
+        f_data, f_list = f.strip_functions(data_string)
+        f_data = re.split(r",", f_data)
+        funs = f.dress_up_functions(f_data, f_list)
+        res_list = []
+        for p in funs:
+            if re.fullmatch(number_pattern, p):
+                result = f.var_from_str(p)
+            else:
+                result = f.var_from_str(p, force_ex=False)
+                if result is None:
+                    function = f.Node.init_root("temp", p, [])
+                    result = f.execute(function)
+            res_list.append(result)
+        return res_list
     iter_list = None
     if len(f_list) != 0:
         iter_list = make_list(f_list[0])
@@ -30,9 +49,10 @@ def make_list(data_string):
     for v in for_args:
         if f.var_from_str(v, force_ex=False) is not None:
             raise Exception("wrong argument name" + v)
+
     if iter_list is None or lvl2_2[1] != "#":
-        if exec.data.get("lst").keys().__contains__(data):
-            iter_list = f.var_from_str(for_args[1], force_ex=True)
+        if exec.data.get("lst").keys().__contains__(lvl2_2[1]):
+            iter_list = f.var_from_str(lvl2_2[1], force_ex=True)
     lvl2_1 = re.split(if_pattern, lvl1[0])
     if len(lvl2_1) == 1:
         if re.fullmatch(exec_pattern, lvl2_1[0]):
