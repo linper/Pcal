@@ -3,6 +3,7 @@ import sys
 import re
 import function as f
 import pickle
+import temp_pool as tp
 
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -12,6 +13,7 @@ name_pattern = re.compile(r"^[a-zA-Z_][\w_]*")
 
 u_funs = {}
 vars = {}
+lsts = {}
 
 
 # functions
@@ -127,7 +129,7 @@ def addv(*args, **kwargs):
 
 
 def addf(*args, **kwargs):
-    """"command add global function"""
+    """"command to add global function"""
     if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
         name = kwargs.get("name")
     elif len(args) >= 3 and not all_names.__contains__(args[0]):
@@ -151,6 +153,30 @@ def addf(*args, **kwargs):
     if re.fullmatch(name_pattern, name):
         function = f.Node.init_root(name, func, params)
         u_funs.update({name: (function, len(params))})
+        all_names.append(name)
+    else:
+        raise Exception("bad name pattern")
+
+
+def addl(*args, **kwargs):
+    """"command to add global list"""
+    if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
+        name = kwargs.get("name")
+    elif len(args) >= 2 and not all_names.__contains__(args[0]):
+        name = args[0]
+    else:
+        raise Exception("no name or such name exists")
+    if kwargs.keys().__contains__("list"):
+        lst = kwargs.get("list")
+    elif len(args) >= 2:
+        lst = args[-1]
+    else:
+        raise Exception("no list")
+    if not isinstance(lst, list):
+        raise Exception("value is not a list")
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        lsts.update({name: lst})
         all_names.append(name)
     else:
         raise Exception("bad name pattern")
@@ -209,11 +235,12 @@ def save(*args, **kwargs):
 def load(*args, **kwargs):
     global data
     global all_names
-    global built_ins
+    global commands
     global constants
     global funs
     global u_funs
     global vars
+    global lsts
     if kwargs.keys().__contains__("file"):
         name = kwargs.get("file")
     elif args[0] is not None:
@@ -223,11 +250,12 @@ def load(*args, **kwargs):
     with open("saved/" + name + '.pickle', 'rb') as f:
         data = pickle.load(f)
         all_names = data.get("na")
-        built_ins = data.get("bi")
+        commands = data.get("bi")
         constants = data.get("const")
         funs = data.get("func")
         u_funs = data.get("udf")
         vars = data.get("var")
+        lsts = data.get("lst")
     print("loaded file: ./saved/" + name + ".pkl")
 
 
@@ -248,9 +276,9 @@ def __format(container):
             count += 1
 
 
-built_ins = {"addv": addv, "addf": addf, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
-all_names = []
-data = {"na": all_names, "bi": built_ins, "const": constants, "func": funs, "udf": u_funs, "var": vars}
+commands = {"addv": addv, "addf": addf, "addl": addl, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
+all_names = ["if", "else", "for", "in"]
+data = {"na": all_names, "cmd": commands, "const": constants, "func": funs, "udf": u_funs, "var": vars, "lst": lsts}
 data.update({"data": data})
 
 

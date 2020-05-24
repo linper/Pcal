@@ -1,5 +1,6 @@
 import exec
 import re
+import temp_pool as tp
 
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -54,7 +55,6 @@ class Node:
                 if n.__contains__(item):
                     return True
         return False
-
 
     def __call__(self, *args, **kwargs):
         """"function tree execution entry point"""
@@ -238,6 +238,8 @@ def get_level(data, level):
         s = str(re.search(levels[level], data).group()).strip('#')
         if exec.data.get("func").keys().__contains__(s):
             func = exec.data.get("func").get(s)
+        elif tp.temps.keys().__contains__(s):
+            func = tp.temps.get(s)
         else:
             func = exec.data.get("udf").get(s)
         tree = True
@@ -332,6 +334,10 @@ def var_from_str(data, params=None, force_ex=True):
         return sign * exec.data.get("const").get(data)
     elif exec.data.get("var").keys().__contains__(data):
         return sign * exec.data.get("var").get(data)
+    elif exec.data.get("lst").keys().__contains__(data):
+        return exec.data.get("lst").get(data)
+    elif tp.temps.keys().__contains__(data):
+        return tp.temps.get(data)
     if force_ex:
         raise Exception(data + " does not exist")
     else:
@@ -357,5 +363,6 @@ def swap_std_exp(data, params):
                 except Exception:
                     start = s+1
             if not changed:
-                raise Exception("Syntax error in std expression")
+                return data
+                # raise Exception("Syntax error in std expression")
     return new_data

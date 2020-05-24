@@ -2,12 +2,16 @@ import re
 from ast import literal_eval
 import exec
 import function as f
+import temp_pool as tp
+import lst
 
 
 # command_pattern = re.compile(r"^[a-zA-Z0-9_\s]+(\s+[a-zA-Z0-9_-]+\s*)*$")
 func_pattern = re.compile(r"^([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d()+*\-/.,^%!=|&\"_]+\s*)*$")
-assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?[\w\d()+*\-/.,^%!|&\"_]+\s*$")
+# assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
+assignment_pattern = re.compile(r"^[\w\s_]+:\s?(([\w\s()\[\]+*\-/.,^%!|&\"_]+)|(\[[\w\s()\[\]+*\-/.,^%!|&\"_]+\]))\s*$")
+list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
 udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -22,17 +26,32 @@ def parse(line):
             parts = re.split(r"[\s]+", line)
             com = parts[0]
             args, kwargs = format_inputs(parts[1:])
-            if not exec.built_ins.keys().__contains__(com):
+            if not exec.commands.keys().__contains__(com):
                 print("no such command")
                 return
             else:
-                exec.built_ins.get(com)(*args, **kwargs)
+                exec.commands.get(com)(*args, **kwargs)
         elif re.match(assignment_pattern, line):
             parts = re.split(r"[\s]+", line.replace(":", " "))
-            if len(parts) == 2 and (re.match(number_pattern, parts[1]) or re.match(exec_pattern, parts[1])):
-                exec.addv(*parts)
-            elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
-                exec.addf(*parts)
+            if re.match(list_assignment_pattern, line):
+                _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts)]), clean=True)
+                if len(list_comps) == 1:
+                    lst_var = lst.make_list(list_comps[0])
+                    exec.addl(parts[0], lst_var)
+                    print(lst_var)
+                elif len(list_comps) == 2:
+                    print("iterative var addition not implemented")
+                elif len(list_comps) >= 3:
+                    print("iterative udf addition not implemented")
+                else:
+                    print("syntax error")
+            else:
+                if len(parts) == 2 and (re.match(number_pattern, parts[1]) or re.match(exec_pattern, parts[1])):
+                    exec.addv(*parts)
+                elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
+                    exec.addf(*parts)
+                else:
+                    print("assignment failed")
         elif re.fullmatch(exec_pattern, line):
             if re.fullmatch(number_pattern, line):
                 result = f.var_from_str(line)
@@ -46,6 +65,8 @@ def parse(line):
             print("syntax error")
     except Exception as e:
         print(str(e))
+    finally:
+        tp.empty_tp()
 
 
 def get_udf_name(data):
