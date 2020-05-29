@@ -12,11 +12,13 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"\+", r"[\w\d_]-", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"[\d\w_]+#"]
-level_str = ["+", "-", "*", "/", "**", ""]
+levels = [r"[\w\d_]-", r"\+", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\d\w_]+#"]
+level_str = ["-", "+", "*", "/", "**", ">=", ">", "<=", "<", "!=", "==", "|", "&", "^", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
+single_eq_pattern = re.compile(r"[^!=](?:=)[^=]")
+bad_eq_pattern = re.compile(r"^[=]")
 
 
 class Node:
@@ -112,6 +114,8 @@ def pass_levels(parent, data, inner, level, params):
             f_data, f_list = strip_functions(inner[0])
             f_data = re.split(r",", f_data)
             funs = dress_up_functions(f_data, f_list)
+            if len(funs) > max_nodes:
+                raise Exception("out of nodes")
             for i in range(len(funs)):
                 if re.fullmatch(basic_multi, funs[i]):
                     add_single(parent, funs[i], params)
@@ -180,13 +184,18 @@ def get_level(data, level):
             break
     fixed = []
     if level + 1 < len(levels):
-        strings = data.split(matcher)
+        strings = data.replace(" ", "").split(matcher)
+        for s in strings:
+            if re.match(bad_eq_pattern, s):
+                raise Exception("bad (not)equality pattern")
         if strings.__contains__(""):
             count = 0
             is_empty = False
-            if matcher == "+":
-                while strings.__contains__(""):
-                    strings.remove("")
+            if ["+", "|", "&", "^", "<", ">"].__contains__(matcher):
+                if strings.__contains__(""):
+                    raise Exception("excess of operators")
+                # while strings.__contains__(""):
+                #     strings.remove("")
             elif matcher == "-":
                 pre_fixed = []
                 for i in range(len(strings)):
@@ -194,11 +203,15 @@ def get_level(data, level):
                         is_empty = True
                         count += 1
                     elif is_empty:
-                        is_empty = False
                         if count % 2 == 0:
                             pre_fixed.append(strings[i])
                         else:
-                            pre_fixed.append("-" + strings[i])
+                            if len(pre_fixed) > 0:
+                                pre_fixed[-1] = pre_fixed[-1] + "+" + strings[i]
+                                # pre_fixed.append("+" + strings[i])
+                            else:
+                                pre_fixed.append(strings[i])
+                        is_empty = False
                         count = 0
                     else:
                         pre_fixed.append(strings[i])
@@ -284,8 +297,7 @@ def strip_functions(data):
                 r_bound = r_indices[r_index]
         for s in fun_list:
             data = data.replace(s, '#', 1)
-            # data = re.sub(s, '#', data, count=1)
-        data = data.replace("|#|", "abs#")
+        # data = data.replace("|#|", "abs#")
         for s in fun_list:
             f_list.append(s[1: -1])
     return data, f_list

@@ -8,7 +8,7 @@ import temp_pool as tp
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
-exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,<>^=%!|&\"_]+)\s*$")
 name_pattern = re.compile(r"^[a-zA-Z_][\w_]*")
 
 u_funs = {}
@@ -17,6 +17,45 @@ lsts = {}
 
 
 # functions
+def b_or(*args):
+    return int(bool(args[0]) or bool(args[1]))
+
+
+def b_and(*args):
+    return int(bool(args[0]) and bool(args[1]))
+
+
+def b_xor(*args):
+    return int(bool(args[0]) != bool(args[1]))
+
+
+def b_eq(*args):
+    return int(args[0] == args[1])
+
+
+def b_not(*args):
+    if len(args) == 1:
+        return int(not bool(args[0]))
+    elif len(args) == 2:
+        return int(args[0] != args[1])
+
+
+def gt(*args):
+    return int(args[0] > args[1])
+
+
+def ge(*args):
+    return int(args[0] >= args[1])
+
+
+def lt(*args):
+    return int(args[0] < args[1])
+
+
+def le(*args):
+    return int(args[0] <= args[1])
+
+
 def sum(*args):
     s = 0.0
     for i in range(len(args)):
@@ -84,7 +123,11 @@ def forwad(*args):
     return args[0]
 
 
-funs = {"+": (sum, 256), "-": (sub, 256), "/": (div, 256), "*": (mul, 256), "**": (pow, 32),
+funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
+        "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
+        "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "*": (mul, 256), "**": (pow, 32),
+        "or": (b_or, 2), "and": (b_and, 2), "xor": (b_xor, 2), "eq": (b_eq, 2), "nq": (b_not, 2), "not": (b_not, 1),
+        "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
         "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
         "forward": (forwad, 1)}
@@ -207,12 +250,16 @@ def rm(*args, **kwargs):
         name = args[0]
     elif vars.get(args[0]) is not None:
         name = args[0]
+    elif lsts.get(args[0]) is not None:
+        name = args[0]
     else:
         raise Exception("function or variable does not exist")
     name = str(name)
     if re.fullmatch(name_pattern, name):
         if vars.get(name) is not None:
             vars.pop(name, None)
+        elif lsts.get(name) is not None:
+            lsts.pop(name, None)
         else:
             u_funs.pop(name, None)
         all_names.remove(name)
