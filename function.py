@@ -12,8 +12,8 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"[\w\d_]-", r"\+", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\d\w_]+#"]
-level_str = ["-", "+", "*", "/", "**", ">=", ">", "<=", "<", "!=", "==", "|", "&", "^", ""]
+levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\w\d_]-", r"\+", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"[\d\w_]+#"]
+level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "-", "+", "*", "/", "**", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
@@ -42,7 +42,7 @@ class Node:
         root.data_as_str = str(data)
         init_tree(root, data, 0, root.parameters)
         for p in params:
-            if not re.search(r"(?:^|[(,+\-*|/])" + p + r"(?:$|[),+\-*|/])", root.data_as_str):
+            if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + p + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
                 raise Exception(f"there is no \"{p}\" in function: {data}")
         return root
 

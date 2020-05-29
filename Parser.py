@@ -8,7 +8,7 @@ import lst
 
 # command_pattern = re.compile(r"^[a-zA-Z0-9_\s]+(\s+[a-zA-Z0-9_-]+\s*)*$")
 func_pattern = re.compile(r"^([\w\d()+*\-/.,<>^=%!|&\"_]+)\s*$")
-command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d()+*\-/.,<>^%!=|&\"_]+\s*)*$")
+command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d()+\[\]*\-/.,<>^%!=|&\"_]+\s*)*$")
 # assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
 assignment_pattern = re.compile(r"^[\w\s_]+:\s?(([\w\s()\[\]+*\-/.,^=%!|&\"_]+)|(\[[\w\s()\[\]+*\-/.,<>^%=!|&\"_]+\]))\s*$")
 list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
@@ -25,7 +25,8 @@ kwargs_patter = re.compile(r"[\w\d_]+=[\w\d_]+")
 def parse(line):
     try:
         if re.match(command_pattern, line) and not re.fullmatch(number_pattern, line) and \
-                not exec.constants.keys().__contains__(line) and not exec.vars.keys().__contains__(line):
+                not exec.constants.keys().__contains__(line) and not exec.vars.keys().__contains__(line) and \
+                not exec.lsts.keys().__contains__(line):
             parts = re.split(r"[\s]+", line)
             com = parts[0]
             args, kwargs = format_inputs(parts[1:])

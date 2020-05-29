@@ -4,6 +4,7 @@ import re
 import function as f
 import pickle
 import temp_pool as tp
+import lst as l
 
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -203,13 +204,18 @@ def addf(*args, **kwargs):
 
 def addl(*args, **kwargs):
     """"command to add global list"""
+    lst = None
     if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
         name = kwargs.get("name")
     elif len(args) >= 2 and not all_names.__contains__(args[0]):
         name = args[0]
     else:
         raise Exception("no name or such name exists")
-    if kwargs.keys().__contains__("list"):
+    if isinstance(args[1][0], str):
+        _, list_comps = l.separate_list_comp(" ".join(args[1: len(args)]), clean=True)
+        if len(list_comps) == 1:
+            lst = l.make_list(list_comps[0])
+    elif kwargs.keys().__contains__("list"):
         lst = kwargs.get("list")
     elif len(args) >= 2:
         lst = args[-1]
