@@ -33,7 +33,7 @@ class Node:
         self.data_as_str = None
 
     @classmethod
-    def init_root(cls, name, data, params):
+    def init_root(cls, name, data, params, strict=True):
         """"__init__for root node"""
         root = Node()
         root.name = name
@@ -41,9 +41,9 @@ class Node:
             root.parameters.update({i: i})
         root.data_as_str = str(data)
         init_tree(root, data, 0, root.parameters)
-        for p in params:
-            if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + p + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
-                raise Exception(f"there is no \"{p}\" in function: {data}")
+        for i in range(len(params) * strict):
+            if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + params[i] + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
+                raise Exception(f"there is no \"{params[i]}\" in function: {data}")
         return root
 
     def __str__(self):
@@ -100,7 +100,8 @@ def iterate(root, params):
 
 def init_tree(root, data, level, params):
     """"creates inner function"""
-    leftover, funcs = strip_functions(data)
+    leftover, funcs = strip_functions(data, "([", ")]", "#")
+    # leftover, funcs = strip_functions(data)
     leftover = swap_std_exp(leftover, params)
     return pass_levels(root, leftover, funcs, level, params)
 
@@ -113,7 +114,8 @@ def pass_levels(parent, data, inner, level, params):
         max_nodes = func[1]
         parent.data = func[0]
         if tree:
-            f_data, f_list = strip_functions(inner[0])
+            f_data, f_list = strip_functions(inner[0], "([", ")]", "#")
+            # f_data, f_list = strip_functions(inner[0])
             f_data = re.split(r",", f_data)
             funs = dress_up_functions(f_data, f_list)
             if len(funs) > max_nodes:
@@ -263,15 +265,13 @@ def get_level(data, level):
     return fixed, func, tree
 
 
-def strip_functions(data):
+def strip_functions(data, o_sequence, c_sequence, replacement):
     """"strips function of brackets and replaces them with #"""
     fun_list = []
-    l_indices = [i for i, ltr in enumerate(data) if ltr == '(' or ltr == '[']
-    r_indices = [i for i, ltr in enumerate(data) if ltr == ')' or ltr == ']']
-    # l_indices = [i for i, ltr in enumerate(data) if ltr == '(']
-    # r_indices = [i for i, ltr in enumerate(data) if ltr == ')']
+    l_indices = [i for i, ltr in enumerate(data) if o_sequence.__contains__(ltr)]
+    r_indices = [i for i, ltr in enumerate(data) if c_sequence.__contains__(ltr)]
     if len(l_indices) != len(r_indices):
-        raise Exception("wrong number of \"()\"")
+        raise Exception("wrong number of \"" + o_sequence + " " + c_sequence + "\"")
     f_list = []
     if len(l_indices) > 0:
         l_par_count = r_par_count = 1
@@ -293,7 +293,7 @@ def strip_functions(data):
                     r_bound = r_indices[r_index]
                 continue
             elif l_par_count < r_par_count:
-                raise Exception("wrong order of brackets")
+                raise Exception("wrong order of opening and closing elements")
             if l_par_count < len(l_indices) and l_indices[l_index + 1] < r_indices[r_index]:
                 l_index += 1
                 l_par_count += 1
@@ -302,8 +302,7 @@ def strip_functions(data):
                 r_par_count += 1
                 r_bound = r_indices[r_index]
         for s in fun_list:
-            data = data.replace(s, '#', 1)
-        # data = data.replace("|#|", "abs#")
+            data = data.replace(s, replacement, 1)
         for s in fun_list:
             f_list.append(s[1: -1])
     return data, f_list

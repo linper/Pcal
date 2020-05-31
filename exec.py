@@ -274,6 +274,7 @@ def rm(*args, **kwargs):
 
 
 def save(*args, **kwargs):
+    """saves current daa to file"""
     if kwargs.keys().__contains__("file"):
         name = kwargs.get("file")
     elif args[0] is not None:
@@ -286,6 +287,7 @@ def save(*args, **kwargs):
 
 
 def load(*args, **kwargs):
+    """"loads data from file"""
     global data
     global all_names
     global commands

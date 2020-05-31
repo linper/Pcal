@@ -19,9 +19,10 @@ else_pattern = re.compile(r"\s(?:else)\s")
 
 
 def make_list(data_string):
+    """"parses simple and advanced list strings into lists"""
     data, f_list = separate_list_comp(data_string)
     if re.fullmatch(basic_list_pattern, "[" + data_string + "]") and not re.fullmatch(list_exec_pattern, "[" + data_string + "]"):
-        f_data, f_list = f.strip_functions(data_string)
+        f_data, f_list = f.strip_functions(data_string, "([", ")]", "#")
         f_data = re.split(r",", f_data)
         funs = f.dress_up_functions(f_data, f_list)
         res_list = []
@@ -35,9 +36,7 @@ def make_list(data_string):
                     result = f.execute(function)
             res_list.append(result)
         return res_list
-    iter_list = None
-    if len(f_list) != 0:
-        iter_list = make_list(f_list[0])
+    iter_list = []
     lvl1 = re.split(for_pattern, data)
 
     if len(lvl1) != 2:
@@ -49,10 +48,18 @@ def make_list(data_string):
     for v in for_args:
         if f.var_from_str(v, force_ex=False) is not None:
             raise Exception("wrong argument name" + v)
-
-    if iter_list is None or lvl2_2[1] != "#":
-        if exec.data.get("lst").keys().__contains__(lvl2_2[1]):
-            iter_list = f.var_from_str(lvl2_2[1], force_ex=True)
+    h_count = 0
+    for l in lvl2_2[1].split(","):
+        if l == "#":
+            iter_list.append(make_list(f_list[h_count]))
+            h_count += 1
+        else:
+            _l = f.var_from_str(l, force_ex=True)
+            if isinstance(_l, list):
+                iter_list.append(_l)
+            else:
+                raise Exception(str(_l) + " is not a list")
+            # elif exec.data.get("lst").keys().__contains__(l):
     lvl2_1 = re.split(if_pattern, lvl1[0])
     if re.fullmatch(exec_pattern, lvl2_1[0]):
         main_function = f.Node.init_root("temp", lvl2_1[0], for_args)
@@ -64,12 +71,12 @@ def make_list(data_string):
     if len(lvl2_1) > 2:
         raise Exception("too much if statements")
     lvl3 = re.split(else_pattern, lvl2_1[1])
-    if_function = f.Node.init_root("temp", lvl3[0], for_args)
+    if_function = f.Node.init_root("temp", lvl3[0], for_args, strict=False)
     t1_name = tp.add_t(if_function, len(for_args))
     if len(lvl3) == 1:
         return lst_iterate_f(iter_list, t0_name, t1_name)
     elif len(lvl3) == 2:
-        else_function = f.Node.init_root("temp", lvl3[1], for_args)
+        else_function = f.Node.init_root("temp", lvl3[1], for_args, strict=False)
         t2_name = tp.add_t(else_function, len(for_args))
         return lst_iterate_f(iter_list, t0_name, t1_name, t2_name)
     else:
@@ -77,14 +84,20 @@ def make_list(data_string):
 
 
 def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None):
+    """executes advanced list (list_comp)"""
+    min_length = float("inf")
+    for l in lst:
+        if len(l) < min_length:
+            min_length = len(l)
     ans = []
-    for v in lst:
-        _f = f.Node.init_root("t", if_func + "(" + str(v) + ")", [])
-        a = f.execute(_f)
-        if if_func is None or bool(a):
-            ans.append(f.execute(f.Node.init_root("t", main_func + "(" + str(v) + ")", [])))
+    for i in range(min_length):
+        ls_str = ""
+        for ls in lst:
+            ls_str = ls_str + "," + str(ls[i])
+        if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str.strip(",") + ")", [], strict=False))):
+            ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
         elif secondary_func is not None:
-            ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + str(v) + ")", [])))
+            ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
     return ans
 
 
