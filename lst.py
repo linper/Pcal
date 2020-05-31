@@ -94,7 +94,7 @@ def separate_list_comp(data, clean=False):
     l_indices = [i for i, ltr in enumerate(data) if ltr == '[']
     r_indices = [i for i, ltr in enumerate(data) if ltr == ']']
     if len(l_indices) != len(r_indices):
-        raise Exception("wrong number of \"[]]\"")
+        raise Exception("wrong number of \"[]\"")
     f_list = []
     if len(l_indices) > 0:
         l_par_count = r_par_count = 1

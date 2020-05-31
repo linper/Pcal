@@ -12,7 +12,7 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\w\d_]-", r"\+", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"[\d\w_]+#"]
+levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\w\d_#]-", r"\+", r"[^*](\*)[^*]", r"\/", r"(?:\*\*)", r"[\d\w_]+#"]
 level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "-", "+", "*", "/", "**", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
@@ -89,6 +89,8 @@ def iterate(root, params):
         l = []
         for n in root.nodes:
             l.append(iterate(n, params))
+        if isinstance(root.data, list):
+            return root.data[int(l[0])]
         return root.data(*l)
     elif params.keys().__contains__(str(root.data)):
         return params.get(str(root.data))
@@ -147,8 +149,7 @@ def pass_levels(parent, data, inner, level, params):
                     add_single(parent, string, params)
                 else:
                     inner_taken += inner_count
-                    parent.nodes.append(
-                        pass_levels(Node(params=params, name=string), string, inner[inner_taken - inner_count: inner_taken], level, params))
+                    parent.nodes.append(pass_levels(Node(params=params, name=string), string, inner[inner_taken - inner_count: inner_taken], level, params))
             else:
                 raise Exception("out of nodes")
         return parent
@@ -253,6 +254,9 @@ def get_level(data, level):
             func = exec.data.get("func").get(s)
         elif tp.temps.keys().__contains__(s):
             func = tp.temps.get(s)
+        elif exec.data.get("lst").keys().__contains__(s):
+            lst = exec.data.get("lst").get(s)
+            func = lst, len(lst)
         else:
             func = exec.data.get("udf").get(s)
         tree = True
@@ -262,8 +266,10 @@ def get_level(data, level):
 def strip_functions(data):
     """"strips function of brackets and replaces them with #"""
     fun_list = []
-    l_indices = [i for i, ltr in enumerate(data) if ltr == '(']
-    r_indices = [i for i, ltr in enumerate(data) if ltr == ')']
+    l_indices = [i for i, ltr in enumerate(data) if ltr == '(' or ltr == '[']
+    r_indices = [i for i, ltr in enumerate(data) if ltr == ')' or ltr == ']']
+    # l_indices = [i for i, ltr in enumerate(data) if ltr == '(']
+    # r_indices = [i for i, ltr in enumerate(data) if ltr == ')']
     if len(l_indices) != len(r_indices):
         raise Exception("wrong number of \"()\"")
     f_list = []
@@ -378,3 +384,12 @@ def swap_std_exp(data, params):
                 return data
                 # raise Exception("Syntax error in std expression")
     return new_data
+
+
+def get_index(data):
+    """"function returns index value of indexed list, everything are strings, no error checking"""
+    data = str(data)
+    o_br = [i for i, v in enumerate(data) if v == '[']
+    c_br = [i for i, v in enumerate(data) if v == ']']
+    return data[o_br[0] + 1:c_br[-1]]
+
