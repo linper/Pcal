@@ -7,4 +7,4 @@ if __name__ == '__main__':
     print("pCal 1.0")
     while True:
         line = input()
-        p.parse(line)
+        p.parse(line, False)

@@ -1,16 +1,17 @@
 import re
-import exec
+# import exec
 import function as f
 import temp_pool as tp
+import Parser as P
 
-exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,^=%!|&\"_]+)\s*$")
-enum_pattern = re.compile(r"\d[\d,]*")
-list_exec_pattern_no_sp = re.compile(r"^\[[\w()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
-list_comp_pattern = re.compile(r"^[\s#]+$")
-basic_list_pattern = re.compile(r"^\[[\w,]+\]\s*$")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([^\[][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]+)\s*$")
+# enum_pattern = re.compile(r"\d[\d,]*")
+# list_exec_pattern_no_sp = re.compile(r"^\[[\w()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+list_comp_pattern = re.compile(r"^[\s#@]+$")
+basic_list_pattern = re.compile(r"^\[[\w,#@]+\]\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
-list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+list_exec_pattern = re.compile(r"^\[[\w\s()@#\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_@#]+(?:\sin\s)[\w\s()@\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 
 in_pattern = re.compile(r"\s(?:in)\s")
 for_pattern = re.compile(r"\s(?:for)\s")
@@ -18,7 +19,7 @@ if_pattern = re.compile(r"\s(?:if)\s")
 else_pattern = re.compile(r"\s(?:else)\s")
 
 
-def make_list(data_string):
+def make_list(data_string, cmds):
     """"parses simple and advanced list strings into lists"""
     data, f_list = separate_list_comp(data_string)
     if re.fullmatch(basic_list_pattern, "[" + data_string + "]") and not re.fullmatch(list_exec_pattern, "[" + data_string + "]"):
@@ -26,6 +27,8 @@ def make_list(data_string):
         f_data = re.split(r",", f_data)
         funs = f.dress_up_functions(f_data, f_list)
         res_list = []
+        for cmd in cmds:
+            P.parse(cmd)
         for p in funs:
             if re.fullmatch(number_pattern, p):
                 result = f.var_from_str(p)
@@ -38,7 +41,12 @@ def make_list(data_string):
         return res_list
     iter_list = []
     lvl1 = re.split(for_pattern, data)
-
+    fr_half_et_count = lvl1[0].count("@")
+    sc_half_et_count = lvl1[1].count("@")
+    if sc_half_et_count != 0:
+        for c in cmds[fr_half_et_count + 1: len(cmds)]:
+            P.parse(c)
+        lvl1[1] = lvl1[1].replace("@", "")
     if len(lvl1) != 2:
         raise Exception("missing for statement")
     lvl2_2 = re.split(in_pattern, lvl1[1])
@@ -47,11 +55,11 @@ def make_list(data_string):
     for_args = lvl2_2[0].replace(" ", "").split(",")
     for v in for_args:
         if f.var_from_str(v, force_ex=False) is not None:
-            raise Exception("wrong argument name" + v)
+            raise Exception("wrong argument name: " + v)
     h_count = 0
     for l in lvl2_2[1].split(","):
         if l == "#":
-            iter_list.append(make_list(f_list[h_count]))
+            iter_list.append(make_list(f_list[h_count], []))
             h_count += 1
         else:
             _l = f.var_from_str(l, force_ex=True)
@@ -59,31 +67,44 @@ def make_list(data_string):
                 iter_list.append(_l)
             else:
                 raise Exception(str(_l) + " is not a list")
-            # elif exec.data.get("lst").keys().__contains__(l):
     lvl2_1 = re.split(if_pattern, lvl1[0])
+    cmds_group = [[], [], []]
+    c_count = 0
     if re.fullmatch(exec_pattern, lvl2_1[0]):
+        _c_count = lvl2_1[0].count("@")
+        lvl2_1[0] = lvl2_1[0].replace("@", "")
+        cmds_group[1] = cmds[c_count: c_count+_c_count]
+        c_count += _c_count
         main_function = f.Node.init_root("temp", lvl2_1[0], for_args)
         t0_name = tp.add_t(main_function, len(for_args))
         if len(lvl2_1) == 1:
-            return lst_iterate_f(iter_list, t0_name)
+            return lst_iterate_f(iter_list, t0_name, cmds=cmds_group)
     else:
         raise Exception("list comp syntax error")
     if len(lvl2_1) > 2:
         raise Exception("too much if statements")
     lvl3 = re.split(else_pattern, lvl2_1[1])
+    _c_count = lvl3[0].count("@")
+    lvl3[0] = lvl3[0].replace("@", "")
+    cmds_group[0] = cmds[c_count: c_count + _c_count]
+    c_count += _c_count
     if_function = f.Node.init_root("temp", lvl3[0], for_args, strict=False)
     t1_name = tp.add_t(if_function, len(for_args))
     if len(lvl3) == 1:
-        return lst_iterate_f(iter_list, t0_name, t1_name)
+        return lst_iterate_f(iter_list, t0_name, t1_name, cmds=cmds_group)
     elif len(lvl3) == 2:
+        _c_count = lvl3[0].count("@")
+        lvl3[1] = lvl3[1].replace("@", "")
+        cmds_group[2] = cmds[c_count: c_count + _c_count]
+        c_count += _c_count
         else_function = f.Node.init_root("temp", lvl3[1], for_args, strict=False)
         t2_name = tp.add_t(else_function, len(for_args))
-        return lst_iterate_f(iter_list, t0_name, t1_name, t2_name)
+        return lst_iterate_f(iter_list, t0_name, t1_name, t2_name, cmds=cmds_group)
     else:
         raise Exception("too much else statements")
 
 
-def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None):
+def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None, cmds=([], [], [])):
     """executes advanced list (list_comp)"""
     min_length = float("inf")
     for l in lst:
@@ -94,9 +115,15 @@ def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None):
         ls_str = ""
         for ls in lst:
             ls_str = ls_str + "," + str(ls[i])
+        for cmd in cmds[0]:
+            P.parse(cmd)
         if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str.strip(",") + ")", [], strict=False))):
+            for cmd in cmds[1]:
+                P.parse(cmd)
             ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
         elif secondary_func is not None:
+            for cmd in cmds[2]:
+                P.parse(cmd)
             ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
     return ans
 

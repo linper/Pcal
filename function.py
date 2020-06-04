@@ -1,6 +1,7 @@
 import exec
 import re
 import temp_pool as tp
+import Parser as p
 
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -64,7 +65,6 @@ class Node:
         if isinstance(self.data, Node):
             for k, n in zip(self.data.parameters.keys(), self.nodes):
                 d.update({k: iterate(n, args[0])})
-            # d = args[0]
             return self.data(d)
         else:
             return iterate(self, args[0])
@@ -103,6 +103,7 @@ def init_tree(root, data, level, params):
     leftover, funcs = strip_functions(data, "([", ")]", "#")
     # leftover, funcs = strip_functions(data)
     leftover = swap_std_exp(leftover, params)
+    leftover = leftover.replace("@", "")
     return pass_levels(root, leftover, funcs, level, params)
 
 
@@ -160,13 +161,6 @@ def pass_levels(parent, data, inner, level, params):
         return parent
 
 
-# def params_to_list(parent, data):
-#     data.strip(',')
-#     par = re.split(r",", data)
-#     for p in par:
-#         parent.nodes.append(Node(var_from_str(p, par)))
-
-
 def add_single(parent, data, params):
     """"adds comma separated non functional nodes to function tree"""
     data.strip(',')
@@ -180,10 +174,12 @@ def get_level(data, level):
     data = str(data)
     matcher = level_str[0]
     tree = False
+    changed = False
     for l in range(level, len(levels)):
         if bool(re.search(levels[l], data)):
             level = l
             matcher = level_str[l]
+            changed = True
             break
     fixed = []
     if level + 1 < len(levels):
@@ -197,8 +193,6 @@ def get_level(data, level):
             if ["+", "|", "&", "^", "<", ">"].__contains__(matcher):
                 if strings.__contains__(""):
                     raise Exception("excess of operators")
-                # while strings.__contains__(""):
-                #     strings.remove("")
             elif matcher == "-":
                 pre_fixed = []
                 for i in range(len(strings)):
@@ -211,7 +205,6 @@ def get_level(data, level):
                         else:
                             if len(pre_fixed) > 0:
                                 pre_fixed[-1] = pre_fixed[-1] + "+" + strings[i]
-                                # pre_fixed.append("+" + strings[i])
                             else:
                                 pre_fixed.append(strings[i])
                         is_empty = False
@@ -249,7 +242,10 @@ def get_level(data, level):
                 raise Exception("Syntax error")
         else:
             fixed = strings
-        func = exec.data.get("func").get(level_str[level])
+        if changed:
+            func = exec.data.get("func").get(level_str[level])
+        else:
+            func = exec.data.get("func").get("forward")
     else:
         s = str(re.search(levels[level], data).group()).strip('#')
         if exec.data.get("func").keys().__contains__(s):

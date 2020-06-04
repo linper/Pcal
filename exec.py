@@ -168,6 +168,7 @@ def addv(*args, **kwargs):
     if re.fullmatch(name_pattern, name):
         vars.update({name: value})
         all_names.append(name)
+        return value
     else:
         raise Exception("bad name pattern")
 
@@ -198,6 +199,7 @@ def addf(*args, **kwargs):
         function = f.Node.init_root(name, func, params)
         u_funs.update({name: (function, len(params))})
         all_names.append(name)
+        return function.name
     else:
         raise Exception("bad name pattern")
 
@@ -214,11 +216,11 @@ def addl(*args, **kwargs):
     if isinstance(args[1][0], str):
         _, list_comps = l.separate_list_comp(" ".join(args[1: len(args)]), clean=True)
         if len(list_comps) == 1:
-            lst = l.make_list(list_comps[0])
+            lst = l.make_list(list_comps[0], args[-1])
     elif kwargs.keys().__contains__("list"):
         lst = kwargs.get("list")
     elif len(args) >= 2:
-        lst = args[-1]
+        lst = args[1]
     else:
         raise Exception("no list")
     if not isinstance(lst, list):
@@ -227,6 +229,7 @@ def addl(*args, **kwargs):
     if re.fullmatch(name_pattern, name):
         lsts.update({name: lst})
         all_names.append(name)
+        return lst
     else:
         raise Exception("bad name pattern")
 
@@ -240,12 +243,12 @@ def ls(*args, **kwargs):
     """"command to list global collections"""
     if len(args) >= 1 and data.keys().__contains__(args[0]):
         __format(data.get(args[0]))
-        return
+        return None
     elif kwargs.keys().__contains__("data") and data.keys().__contains__(kwargs.get("data")):
         __format(data.get(kwargs.get("data")))
+        return None
     else:
         raise Exception("collection does not exist")
-    return
 
 
 def rm(*args, **kwargs):
@@ -269,6 +272,7 @@ def rm(*args, **kwargs):
         else:
             u_funs.pop(name, None)
         all_names.remove(name)
+        return None
     else:
         raise Exception("bad name pattern")
 
@@ -284,6 +288,7 @@ def save(*args, **kwargs):
     with open("saved/" + name + '.pickle', 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
     print("saved to file: ./saved/" + name + ".pkl")
+    return None
 
 
 def load(*args, **kwargs):
@@ -312,6 +317,7 @@ def load(*args, **kwargs):
         vars = data.get("var")
         lsts = data.get("lst")
     print("loaded file: ./saved/" + name + ".pkl")
+    return None
 
 
 # private
@@ -335,6 +341,7 @@ commands = {"addv": addv, "addf": addf, "addl": addl, "close": close, "exit": cl
 all_names = ["if", "else", "for", "in"]
 data = {"na": all_names, "cmd": commands, "const": constants, "func": funs, "udf": u_funs, "var": vars, "lst": lsts}
 data.update({"data": data})
+cmd_func = ["addl"]
 
 
 def __collect_names():
