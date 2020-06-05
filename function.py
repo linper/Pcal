@@ -1,7 +1,6 @@
 import exec
 import re
 import temp_pool as tp
-import Parser as p
 
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"

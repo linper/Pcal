@@ -1,10 +1,10 @@
 import math
-import sys
+from sys import exit
 import re
 import function as f
 import pickle
-import temp_pool as tp
 import lst as l
+import os
 
 param_pattern = re.compile(r"p[\d]+")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -236,7 +236,7 @@ def addl(*args, **kwargs):
 
 def close(*args, **kwargs):
     """"command to exit program"""
-    sys.exit()
+    exit()
 
 
 def ls(*args, **kwargs):
@@ -285,9 +285,10 @@ def save(*args, **kwargs):
         name = args[0]
     else:
         raise Exception("need file name without extension")
-    with open("saved/" + name + '.pickle', 'wb') as f:
+    path = os.path.abspath(os.path.split(os.path.abspath(__file__))[0] + "/saved/" + name + '.pkl')
+    with open(path, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
-    print("saved to file: ./saved/" + name + ".pkl")
+    print("saved to file: " + path)
     return None
 
 
@@ -307,7 +308,8 @@ def load(*args, **kwargs):
         name = args[0]
     else:
         raise Exception("need file name without extension")
-    with open("saved/" + name + '.pickle', 'rb') as f:
+    path = os.path.abspath(os.path.split(os.path.abspath(__file__))[0] + "/saved/" + name + '.pkl')
+    with open(path, 'rb') as f:
         data = pickle.load(f)
         all_names = data.get("na")
         commands = data.get("cmd")
@@ -316,7 +318,7 @@ def load(*args, **kwargs):
         u_funs = data.get("udf")
         vars = data.get("var")
         lsts = data.get("lst")
-    print("loaded file: ./saved/" + name + ".pkl")
+    print("loaded file: " + path)
     return None
 
 

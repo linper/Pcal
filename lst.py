@@ -1,5 +1,4 @@
 import re
-# import exec
 import function as f
 import temp_pool as tp
 import Parser as P
