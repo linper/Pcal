@@ -236,7 +236,7 @@ def addl(*args, **kwargs):
 
 def close(*args, **kwargs):
     """"command to exit program"""
-    exit()
+    exit(0)
 
 
 def ls(*args, **kwargs):
