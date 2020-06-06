@@ -4,6 +4,7 @@ import exec
 import function as f
 import temp_pool as tp
 import lst
+import pyperclip
 
 
 # command_pattern = re.compile(r"^[a-zA-Z0-9_\s]+(\s+[a-zA-Z0-9_-]+\s*)*$")
@@ -79,9 +80,11 @@ def parse(line, inner=True):
                         function = f.Node.init_root("temp", ln, [])
                         result = f.execute(function)
                 print(result)
+                pyperclip.copy(str(result))
             elif re.fullmatch(list_exec_pattern, ln) and not inner:
                 result = lst.make_list(lst.separate_list_comp(ln, clean=True)[1][0], loc_cmds)
                 print(result)
+                pyperclip.copy(str(result))
             else:
                 print("syntax error")
     except Exception as e:
