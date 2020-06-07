@@ -78,6 +78,13 @@ def div(*args):
     return s
 
 
+def mod(*args):
+    s = float(args[0])
+    for i in range(1, len(args)):
+        s %= args[i]
+    return s
+
+
 def mul(*args):
     s = 1.0
     for i in range(len(args)):
@@ -126,10 +133,10 @@ def forwad(*args):
 
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
-        "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "*": (mul, 256), "**": (pow, 32),
+        "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
         "or": (b_or, 2), "and": (b_and, 2), "xor": (b_xor, 2), "eq": (b_eq, 2), "nq": (b_not, 2), "not": (b_not, 1),
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
-        "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
+        "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
         "forward": (forwad, 1)}
 
