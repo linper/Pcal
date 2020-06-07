@@ -118,7 +118,8 @@ def pass_levels(parent, data, inner, level, params):
             # f_data, f_list = strip_functions(inner[0])
             f_data = re.split(r",", f_data)
             funs = dress_up_functions(f_data, f_list)
-            if len(funs) > max_nodes:
+            # if len(funs) > max_nodes:
+            if count_nodes(funs, params) > max_nodes:
                 raise Exception("out of nodes")
             for i in range(len(funs)):
                 if re.fullmatch(basic_multi, funs[i]):
@@ -378,6 +379,17 @@ def swap_std_exp(data, params):
                 return data
                 # raise Exception("Syntax error in std expression")
     return new_data
+
+
+def count_nodes(data, params):
+    count = 0
+    for d in data:
+        _d = var_from_str(d, params, False)
+        if isinstance(_d, list):
+            count += len(_d)
+        else:
+            count += 1
+    return count
 
 
 def get_index(data):

@@ -19,22 +19,27 @@ lsts = {}
 
 # functions
 def b_or(*args):
+    args = __flatten_args(args)
     return int(bool(args[0]) or bool(args[1]))
 
 
 def b_and(*args):
+    args = __flatten_args(args)
     return int(bool(args[0]) and bool(args[1]))
 
 
 def b_xor(*args):
+    args = __flatten_args(args)
     return int(bool(args[0]) != bool(args[1]))
 
 
 def b_eq(*args):
+    args = __flatten_args(args)
     return int(args[0] == args[1])
 
 
 def b_not(*args):
+    args = __flatten_args(args)
     if len(args) == 1:
         return int(not bool(args[0]))
     elif len(args) == 2:
@@ -42,22 +47,27 @@ def b_not(*args):
 
 
 def gt(*args):
+    args = __flatten_args(args)
     return int(args[0] > args[1])
 
 
 def ge(*args):
+    args = __flatten_args(args)
     return int(args[0] >= args[1])
 
 
 def lt(*args):
+    args = __flatten_args(args)
     return int(args[0] < args[1])
 
 
 def le(*args):
+    args = __flatten_args(args)
     return int(args[0] <= args[1])
 
 
 def sum(*args):
+    args = __flatten_args(args)
     s = 0.0
     for i in range(len(args)):
         s += args[i]
@@ -65,6 +75,7 @@ def sum(*args):
 
 
 def sub(*args):
+    args = __flatten_args(args)
     s = float(args[0])
     for i in range(1, len(args)):
         s -= args[i]
@@ -72,6 +83,7 @@ def sub(*args):
 
 
 def div(*args):
+    args = __flatten_args(args)
     s = float(args[0])
     for i in range(1, len(args)):
         s /= args[i]
@@ -79,6 +91,7 @@ def div(*args):
 
 
 def mod(*args):
+    args = __flatten_args(args)
     s = float(args[0])
     for i in range(1, len(args)):
         s %= args[i]
@@ -86,6 +99,7 @@ def mod(*args):
 
 
 def mul(*args):
+    args = __flatten_args(args)
     s = 1.0
     for i in range(len(args)):
         s *= args[i]
@@ -93,6 +107,7 @@ def mul(*args):
 
 
 def pow(*args):
+    args = __flatten_args(args)
     s = float(args[0])
     for i in range(1, len(args)):
         s **= args[i]
@@ -100,34 +115,41 @@ def pow(*args):
 
 
 def abs(*args):
+    args = __flatten_args(args)
     return math.fabs(args[0])
 
 
 def tan(*args):
+    args = __flatten_args(args)
     return math.tan(args[0])
 
 
 def atan(*args):
+    args = __flatten_args(args)
     return math.atan(args[0])
 
 
 def sin(*args):
+    args = __flatten_args(args)
     return math.sin(args[0])
 
 
 def asin(*args):
+    args = __flatten_args(args)
     return asin(args[0])
 
 
 def cos(*args):
+    args = __flatten_args(args)
     return math.cos(args[0])
 
 
 def acos(*args):
+    args = __flatten_args(args)
     return math.acos(args[0])
 
 
-def forwad(*args):
+def forward(*args):
     return args[0]
 
 
@@ -138,7 +160,7 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
         "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
-        "forward": (forwad, 1)}
+        "forward": (forward, 1)}
 
 # constants
 pi = math.pi
@@ -220,8 +242,9 @@ def addl(*args, **kwargs):
         name = args[0]
     else:
         raise Exception("no name or such name exists")
-    if isinstance(args[1][0], str):
-        _, list_comps = l.separate_list_comp(" ".join(args[1: len(args)]), clean=True)
+    # if isinstance(args[1][0], str):
+    if isinstance(args[1], str):
+        _, list_comps = l.separate_list_comp(" ".join(args[1: len(args) - 1]), clean=True)
         if len(list_comps) == 1:
             lst = l.make_list(list_comps[0], args[-1])
     elif kwargs.keys().__contains__("list"):
@@ -364,3 +387,14 @@ def __collect_names():
     for c in vars.keys():
         if not all_names.__contains__(c):
             all_names.append(c)
+
+
+def __flatten_args(*args):
+    new_args = []
+    for a in args[0]:
+        if isinstance(a, (list, set, tuple)):
+            for a_it in a:
+                new_args.append(a_it)
+        else:
+            new_args.append(a)
+    return new_args
