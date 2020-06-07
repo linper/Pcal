@@ -153,6 +153,31 @@ def forward(*args):
     return args[0]
 
 
+def _range(*args):
+    args = __flatten_args(args)
+    if len(args) == 1:
+        return list(range(args[0]))
+    elif len(args) == 2:
+        return list(range(args[0], args[1]))
+    else:
+        return list(range(args[0], args[1], args[2]))
+
+
+def subl(ls, start=0, end=None, step=1):
+    if end is None:
+        end = len(ls)
+    if start is None:
+        start = 0
+    if step is None:
+        step = 1
+    return ls[start:end:step]
+
+
+def length(*args):
+    return len(__flatten_args(args))
+
+
+list_funs = [subl, forward]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
         "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
@@ -160,7 +185,7 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
         "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
-        "forward": (forward, 1)}
+        "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf"))}
 
 # constants
 pi = math.pi
@@ -191,6 +216,8 @@ def addv(*args, **kwargs):
     elif re.fullmatch(exec_pattern, value):
         func = f.Node.init_root("f", value, [])
         value = f.execute(func)
+        if isinstance(value, list):
+            return addl(name, value)
     else:
         raise Exception("value is not a number")
     name = str(name)

@@ -16,7 +16,7 @@ list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@;\[\]+*\-/.,<>^%
 # list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_exec_pattern = re.compile(r"^\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
 # list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
-exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([^\[][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]+)\s*$")
+exec_pattern = re.compile(r"^([^\[][\w\s(){}@;+*\-/.,<>^=%!|&\"_\[\]]+)|^([\w\d_]+(\([\w\d\s_]+\))?)+\s*$")
 # exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,<>^=%!|&\"_]+)\s*$")
 # udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
@@ -57,7 +57,7 @@ def parse(line, inner=True):
             elif re.match(assignment_pattern, ln) and not inner:
                 parts = re.split(r"[\s]+", ln.replace(":", " "))
                 if re.match(list_assignment_pattern, ln):
-                    _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts)]), clean=True)
+                    _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts) - 1]), clean=True)
                     lst_var = lst.make_list(list_comps[0], loc_cmds)
                     exec.addl(parts[0], lst_var, loc_cmds)
                 else:

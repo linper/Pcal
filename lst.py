@@ -56,12 +56,19 @@ def make_list(data_string, cmds):
         if f.var_from_str(v, force_ex=False) is not None:
             raise Exception("wrong argument name: " + v)
     h_count = 0
-    for l in lvl2_2[1].split(","):
+    # for l in lvl2_2[1].split(","):
+    _f_data, _f_list = f.strip_functions(lvl2_2[1], "([", ")]", "#")
+    _f_data = re.split(r",", _f_data)
+    funs = f.dress_up_functions(_f_data, _f_list)
+    for l in funs:
         if l == "#":
             iter_list.append(make_list(f_list[h_count], []))
             h_count += 1
         else:
-            _l = f.var_from_str(l, force_ex=True)
+            _l = f.var_from_str(l, force_ex=False)
+            if _l is None:
+                function = f.Node.init_root("temp", l, [])
+                _l = f.execute(function)
             if isinstance(_l, list):
                 iter_list.append(_l)
             else:

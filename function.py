@@ -1,10 +1,12 @@
 import exec
 import re
 import temp_pool as tp
+import lst
 
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
+list_exec_pattern = re.compile(r"^[(\]][\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+[\])]\s*$")
 binary_pattern = re.compile(r"(^(0[bB])[01]+$)")
 octal_pattern = re.compile(r"(^(0[oO])[0-7]+$)")
 hexadecimal_pattern = re.compile(r"(^(0[xX])[0-9a-fA-F]+$)")
@@ -119,11 +121,16 @@ def pass_levels(parent, data, inner, level, params):
             f_data = re.split(r",", f_data)
             funs = dress_up_functions(f_data, f_list)
             # if len(funs) > max_nodes:
-            if count_nodes(funs, params) > max_nodes:
+            if count_nodes(func[0], funs, params) > max_nodes:
                 raise Exception("out of nodes")
             for i in range(len(funs)):
                 if re.fullmatch(basic_multi, funs[i]):
                     add_single(parent, funs[i], params)
+                elif funs[i] == "":
+                    parent.nodes.append(Node(None, params=params))
+                elif re.fullmatch(list_exec_pattern, funs[i]):
+                    funs[i] = "[" + funs[i][1:len(funs[i])-1] + "]"
+                    parent.nodes.append(Node(data=lst.make_list(lst.separate_list_comp(funs[i], clean=True)[1][0], []), params=params, name=funs[i]))
                 else:
                     parent.nodes.append(init_tree(Node(params=params, name=funs[i]), funs[i], 0, params))
             return parent
@@ -324,11 +331,11 @@ def dress_up_functions(h_string_arr, inner):
 def var_from_str(data, params=None, force_ex=True):
     """"parses variable, constant-variable or non_decimal system number to number"""
     sign = 1
-    if data[0] == '-':
+    if len(data) != 0 and data[0] == '-':
         sign = -1
     if re.match(r"[+-]", data):
         data = data[1:]
-    if re.fullmatch(number_pattern, data):
+    if len(data) != 0 and re.fullmatch(number_pattern, data):
         if re.fullmatch(integer_pattern, data):
             return sign * int(data)
         elif re.fullmatch(float_pattern, data) or re.fullmatch(std_pattern, data):
@@ -341,15 +348,15 @@ def var_from_str(data, params=None, force_ex=True):
             return int(data, base=8)
         else:
             raise Exception("parsing error")
-    elif params is not None and params.keys().__contains__(data):
+    elif len(data) != 0 and params is not None and params.keys().__contains__(data):
         return sign * params.get(data)
-    elif exec.data.get("const").keys().__contains__(data):
+    elif len(data) != 0 and exec.data.get("const").keys().__contains__(data):
         return sign * exec.data.get("const").get(data)
-    elif exec.data.get("var").keys().__contains__(data):
+    elif len(data) != 0 and exec.data.get("var").keys().__contains__(data):
         return sign * exec.data.get("var").get(data)
-    elif exec.data.get("lst").keys().__contains__(data):
+    elif len(data) != 0 and exec.data.get("lst").keys().__contains__(data):
         return exec.data.get("lst").get(data)
-    elif tp.temps.keys().__contains__(data):
+    elif len(data) != 0 and tp.temps.keys().__contains__(data):
         return tp.temps.get(data)
     if force_ex:
         raise Exception(data + " does not exist")
@@ -381,11 +388,11 @@ def swap_std_exp(data, params):
     return new_data
 
 
-def count_nodes(data, params):
+def count_nodes(func, data, params):
     count = 0
     for d in data:
         _d = var_from_str(d, params, False)
-        if isinstance(_d, list):
+        if isinstance(_d, list) and not exec.list_funs.__contains__(func):
             count += len(_d)
         else:
             count += 1
