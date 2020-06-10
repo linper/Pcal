@@ -11,8 +11,9 @@ import pyperclip
 func_pattern = re.compile(r"^([\w\d(){};@+*\-/.,<>^=%!|&\"_]+)\s*$")
 command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d(){};@+\[\]*\-/.,<>^%!=|&\"_]+\s*)*$")
 # assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
-assignment_pattern = re.compile(r"^[\w\s_]+:\s?(([\w\s(){};@\[\]+*\-/.,^=%!|&\"_]+)|(\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]))\s*$")
+assignment_pattern = re.compile(r"^(?:(?:[\w\s_]+)|(?:[\w_]+\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\])):\s?(?:(?:[\w\s(){};@\[\]+*\-/.,^=%!|&\"_]+)|(?:\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]))\s*$")
 list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
+indexed_assignment_pattern = re.compile(r"^(?:[\w_]+\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]):.+$")
 # list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_exec_pattern = re.compile(r"^\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
 # list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
@@ -55,12 +56,23 @@ def parse(line, inner=True):
                 else:
                     exec.commands.get(com)(*args, **kwargs)
             elif re.match(assignment_pattern, ln):
-            # elif re.match(assignment_pattern, ln) and not inner:
                 parts = re.split(r"[\s]+", ln.replace(":", " "))
                 if re.match(list_assignment_pattern, ln):
                     _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts)]), clean=True)
                     lst_var = lst.make_list(list_comps[0], loc_cmds)
                     exec.addl(parts[0], lst_var, loc_cmds)
+                elif re.fullmatch(indexed_assignment_pattern, ln):
+                    for cmd in loc_cmds:
+                        parse(cmd)
+                    leftover, funcs = f.strip_functions(parts[0], "[", "]", "#")
+                    lst_var = f.var_from_str(leftover.replace("#", ""), force_ex=True)
+                    index = f.execute(f.Node.init_root("temp", funcs[0], []))
+                    if not isinstance(index, (int, float)):
+                        raise Exception("index is not a number")
+                    new_value = f.execute(f.Node.init_root("temp", parts[1], []))
+                    if not isinstance(new_value, (int, float)):
+                        raise Exception("new indexed value is not a number")
+                    lst_var[index] = new_value
                 else:
                     for cmd in loc_cmds:
                         parse(cmd)

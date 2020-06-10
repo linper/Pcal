@@ -37,8 +37,6 @@ class Node:
     @classmethod
     def init_root(cls, name, data, params, strict=True):
         """"__init__for root node"""
-        # if data is None:
-        #     return None
         root = Node()
         root.name = name
         for i in params:

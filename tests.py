@@ -43,10 +43,12 @@ class MyTestCase(unittest.TestCase):
 
     def test_indexing(self):
         self.assertIsNone(p.parse("g:range(5); g[5]; rm g", False))
-
         self.assertIsNone(p.parse("g:range(5); g[-6]; rm g", False))
         p.parse("rm g", False)
         self.assertEqual(p.parse("g:range(5); g[-2]+g[2]; rm g", False), [5])
+
+    def test_indexed_assignment(self):
+        self.assertEqual(p.parse("g:range(5); g[1]:2; g[1]; rm g", False), [2])
 
 
 if __name__ == '__main__':
