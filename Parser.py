@@ -16,8 +16,8 @@ list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@;\[\]+*\-/.,<>^%
 # list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_exec_pattern = re.compile(r"^\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
 # list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
-exec_pattern = re.compile(r"^([^\[][\w\s(){}@;+*\-/.,<>^=%!|&\"_\[\]]+)|^([\w\d_]+(\([\w\d\s_]+\))?)+\s*$")
-# exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))+|([\w\d()+*\-/.,<>^=%!|&\"_]+)\s*$")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([\w\d(){}@;+*\-.,<>^=%!|&\"_\]][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]*)\s*$")
+# exec_pattern = re.compile(r"^([^\[][\w\s(){}@;+*\-/.,<>^=%!|&\"_\[\]]+)|^([\w\d_]+(\([\w\d\s_]+\))?)+\s*$")
 # udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
@@ -27,9 +27,9 @@ illegal_pattern = re.compile(r"[#@]+")
 
 def parse(line, inner=True):
     try:
+        results = []
         if re.match(illegal_pattern, line):
-            print("illegal characters: #,@")
-            return
+            raise Exception("illegal characters: #,@")
         orig, cmds = f.strip_functions(line, "{", "}", "@")
         h_count = 0
         for ln in orig.split(";"):
@@ -41,6 +41,7 @@ def parse(line, inner=True):
             if re.match(command_pattern, ln) and not re.fullmatch(number_pattern, ln) and \
                     not exec.constants.keys().__contains__(ln) and not exec.vars.keys().__contains__(ln) and \
                     not exec.lsts.keys().__contains__(ln):
+                ln = ln.replace('@', '')
                 parts = re.split(r"[\s]+", ln)
                 com = parts[0]
                 args, kwargs = format_inputs(parts[1:])
@@ -50,14 +51,14 @@ def parse(line, inner=True):
                     for cmd in loc_cmds:
                         parse(cmd)
                 if not exec.commands.keys().__contains__(com):
-                    print("no such command")
-                    return
+                    raise Exception("no such command")
                 else:
                     exec.commands.get(com)(*args, **kwargs)
-            elif re.match(assignment_pattern, ln) and not inner:
+            elif re.match(assignment_pattern, ln):
+            # elif re.match(assignment_pattern, ln) and not inner:
                 parts = re.split(r"[\s]+", ln.replace(":", " "))
                 if re.match(list_assignment_pattern, ln):
-                    _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts) - 1]), clean=True)
+                    _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts)]), clean=True)
                     lst_var = lst.make_list(list_comps[0], loc_cmds)
                     exec.addl(parts[0], lst_var, loc_cmds)
                 else:
@@ -68,7 +69,7 @@ def parse(line, inner=True):
                     elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
                         exec.addf(*parts)
                     else:
-                        print("assignment failed")
+                        raise Exception("assignment failed")
             elif re.fullmatch(exec_pattern, ln) and not inner:
                 for cmd in loc_cmds:
                     parse(cmd)
@@ -81,14 +82,18 @@ def parse(line, inner=True):
                         result = f.execute(function)
                 print(result)
                 pyperclip.copy(str(result))
+                results.append(result)
             elif re.fullmatch(list_exec_pattern, ln) and not inner:
                 result = lst.make_list(lst.separate_list_comp(ln, clean=True)[1][0], loc_cmds)
                 print(result)
                 pyperclip.copy(str(result))
+                results.append(result)
             else:
-                print("syntax error")
+                raise Exception("syntax error")
+        return results
     except Exception as e:
         print(str(e))
+        return None
     finally:
         if not inner:
             tp.empty_tp()

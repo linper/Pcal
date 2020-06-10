@@ -14,8 +14,8 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"[\w\d_#]-", r"\+", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
-level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "-", "+", "*", "/", "%", "**", ""]
+levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
+level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "*", "/", "%", "**", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
@@ -37,6 +37,8 @@ class Node:
     @classmethod
     def init_root(cls, name, data, params, strict=True):
         """"__init__for root node"""
+        # if data is None:
+        #     return None
         root = Node()
         root.name = name
         for i in params:
@@ -311,7 +313,7 @@ def strip_functions(data, o_sequence, c_sequence, replacement):
     return data, f_list
 
 
-def dress_up_functions(h_string_arr, inner):
+def dress_up_functions(h_string_arr, inner, swap_char='#'):
     """"opposite of 'strip_functions' but returns array of functions, if used with'strip_functions' can separate
     comma separated functions"""
     function_arr = []
@@ -319,7 +321,7 @@ def dress_up_functions(h_string_arr, inner):
     for f in h_string_arr:
         fun = ""
         for c in f:
-            if c == '#':
+            if c == swap_char:
                 fun = fun + "(" + inner[count] + ")"
                 count += 1
             else:

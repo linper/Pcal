@@ -3,7 +3,7 @@ import function as f
 import temp_pool as tp
 import Parser as P
 
-exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([^\[][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]+)\s*$")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([\w\d(){}@;+*\-.,<>^=%!|&\"_\]][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]*)\s*$")
 # enum_pattern = re.compile(r"\d[\d,]*")
 # list_exec_pattern_no_sp = re.compile(r"^\[[\w()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_comp_pattern = re.compile(r"^[\s#@]+$")
@@ -11,6 +11,7 @@ basic_list_pattern = re.compile(r"^\[[\w,#@]+\]\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
 list_exec_pattern = re.compile(r"^\[[\w\s()@#\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_@#]+(?:\sin\s)[\w\s()@\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+none_pattern = re.compile(r"([\s]+)|(^$)")
 
 in_pattern = re.compile(r"\s(?:in)\s")
 for_pattern = re.compile(r"\s(?:for)\s")
@@ -57,9 +58,9 @@ def make_list(data_string, cmds):
             raise Exception("wrong argument name: " + v)
     h_count = 0
     # for l in lvl2_2[1].split(","):
-    _f_data, _f_list = f.strip_functions(lvl2_2[1], "([", ")]", "#")
-    _f_data = re.split(r",", _f_data)
-    funs = f.dress_up_functions(_f_data, _f_list)
+    _f_data, _f_list = f.strip_functions(lvl2_2[1], "([", ")]", "$")
+    _f_data = [s.strip() for s in re.split(r",", _f_data)]
+    funs = f.dress_up_functions(_f_data, _f_list, swap_char='$')
     for l in funs:
         if l == "#":
             iter_list.append(make_list(f_list[h_count], []))
@@ -81,8 +82,11 @@ def make_list(data_string, cmds):
         lvl2_1[0] = lvl2_1[0].replace("@", "")
         cmds_group[1] = cmds[c_count: c_count+_c_count]
         c_count += _c_count
-        main_function = f.Node.init_root("temp", lvl2_1[0], for_args)
-        t0_name = tp.add_t(main_function, len(for_args))
+        if re.fullmatch(none_pattern, lvl2_1[0]):
+            t0_name = None
+        else:
+            main_function = f.Node.init_root("temp", lvl2_1[0], for_args)
+            t0_name = tp.add_t(main_function, len(for_args))
         if len(lvl2_1) == 1:
             return lst_iterate_f(iter_list, t0_name, cmds=cmds_group)
     else:
@@ -110,7 +114,7 @@ def make_list(data_string, cmds):
         raise Exception("too much else statements")
 
 
-def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None, cmds=([], [], [])):
+def lst_iterate_f(lst, main_func=None, if_func=None, secondary_func=None, cmds=([], [], [])):
     """executes advanced list (list_comp)"""
     min_length = float("inf")
     for l in lst:
@@ -126,7 +130,8 @@ def lst_iterate_f(lst, main_func, if_func=None, secondary_func=None, cmds=([], [
         if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str.strip(",") + ")", [], strict=False))):
             for cmd in cmds[1]:
                 P.parse(cmd)
-            ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
+            if main_func is not None:
+                ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str.strip(",") + ")", [], strict=False)))
         elif secondary_func is not None:
             for cmd in cmds[2]:
                 P.parse(cmd)

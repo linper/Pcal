@@ -149,6 +149,14 @@ def acos(*args):
     return math.acos(args[0])
 
 
+def floor(*args):
+    return math.floor(args[0])
+
+
+def ceil(*args):
+    return math.ceil(args[0])
+
+
 def forward(*args):
     return args[0]
 
@@ -177,6 +185,22 @@ def length(*args):
     return len(__flatten_args(args))
 
 
+def cat(*args):
+    return __flatten_args(args)
+
+
+def fill(*args):
+    if isinstance(args[0], list):
+        for i in range(len(args[0])):
+            args[0][i] = args[1]
+        return args[0]
+    else:
+        new_list = []
+        for i in range(args[0]):
+            new_list.append(args[1])
+        return new_list
+
+
 list_funs = [subl, forward]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
@@ -185,7 +209,9 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
         "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
-        "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf"))}
+        "floor": (floor, 1), "ceil": (ceil, 1),
+        "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf")), "cat": (cat, float("inf")),
+        "fill": (fill, 2)}
 
 # constants
 pi = math.pi
