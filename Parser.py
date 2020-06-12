@@ -8,22 +8,22 @@ import pyperclip
 
 
 # command_pattern = re.compile(r"^[a-zA-Z0-9_\s]+(\s+[a-zA-Z0-9_-]+\s*)*$")
-func_pattern = re.compile(r"^([\w\d(){};@+*\-/.,<>^=%!|&\"_]+)\s*$")
-command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d(){};@+\[\]*\-/.,<>^%!=|&\"_]+\s*)*$")
+func_pattern = re.compile(r"^([\w\d(){};@$+*\-/.,<>^=%!|&\"_]+)\s*$")
+command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d(){};@$+\[\]*\-/.,<>^%!=|&\"_]+\s*)*$")
 # assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
-assignment_pattern = re.compile(r"^(?:(?:[\w\s_]+)|(?:[\w_]+\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\])):\s?(?:(?:[\w\s(){};@\[\]+*\-/.,^=%!|&\"_]+)|(?:\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]))\s*$")
-list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
-indexed_assignment_pattern = re.compile(r"^(?:[\w_]+\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]):.+$")
+assignment_pattern = re.compile(r"^(?:(?:[\w\s_]+)|(?:[\w_]+\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\])):\s?(?:(?:[\w\s(){};@$\[\]+*\-/.,^=%!|&\"_]+)|(?:\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\]))\s*$")
+list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\'_]+\]\s*$")
+indexed_assignment_pattern = re.compile(r"^(?:[\w_]+\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"_]+\]):.+$")
 # list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
-list_exec_pattern = re.compile(r"^\[[\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
+list_exec_pattern = re.compile(r"^\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
 # list_exec_pattern = re.compile(r"^\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
-exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([\w\d(){}@;+*\-.,<>^=%!|&\"_\]][\w\d(){}@;+*\-.,<>^=%!|&\"_\[\]]*)\s*$")
+exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([\w\d(){}@$;+*\-.,<>^=%!|&\"_\]][\w\d(){}@$;+*\-.,<>^=%!|&\"_\[\]]*)\s*$")
 # exec_pattern = re.compile(r"^([^\[][\w\s(){}@;+*\-/.,<>^=%!|&\"_\[\]]+)|^([\w\d_]+(\([\w\d\s_]+\))?)+\s*$")
 # udf_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\)))\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
 kwargs_patter = re.compile(r"[\w\d_]+=[\w\d_]+")
-illegal_pattern = re.compile(r"[#@]+")
+illegal_pattern = re.compile(r"[#@$]+")
 
 
 def parse(line, inner=True):
@@ -137,4 +137,3 @@ def format_inputs(inputs):
         else:
             arg_list.append(i)
     return arg_list, kwarg_dict
-

@@ -201,7 +201,14 @@ def fill(*args):
         return new_list
 
 
-list_funs = [subl, forward]  # iterable arguments will not be flattened
+def _str(*args):
+    new_str = ""
+    for a in args:
+        new_str = new_str + str(a).replace(" ", "_")
+    return new_str
+
+
+list_funs = [subl, forward, fill]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
         "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
@@ -211,7 +218,7 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
         "floor": (floor, 1), "ceil": (ceil, 1),
         "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf")), "cat": (cat, float("inf")),
-        "fill": (fill, 2)}
+        "fill": (fill, 2), "str": (_str, 256)}
 
 # constants
 pi = math.pi

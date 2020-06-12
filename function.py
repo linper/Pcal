@@ -6,7 +6,7 @@ import lst
 
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
-list_exec_pattern = re.compile(r"^[(\]][\w\s(){}@;\[\]+*\-/.,<>^%=!|&\"_]+[\])]\s*$")
+list_exec_pattern = re.compile(r"^[(\]][\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"_]+[\])]\s*$")
 binary_pattern = re.compile(r"(^(0[bB])[01]+$)")
 octal_pattern = re.compile(r"(^(0[oO])[0-7]+$)")
 hexadecimal_pattern = re.compile(r"(^(0[xX])[0-9a-fA-F]+$)")
