@@ -35,18 +35,34 @@ class Node:
         self.data_as_str = None
 
     @classmethod
-    def init_root(cls, name, data, params, strict=True):
+    def init_root(cls, name, data, params, strict=True, superss=False):
         """"__init__for root node"""
         root = Node()
         root.name = name
-        for i in params:
-            root.parameters.update({i: i})
         root.data_as_str = str(data)
+        if isinstance(params, dict):
+            root.parameters = params
+        else:
+            for i in range(len(params) * strict):
+                if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + params[i] + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str) and not superss:
+                    if not superss:
+                        raise Exception(f"there is no \"{params[i]}\" in function: {data}")
+                    else:
+                        continue
+                else:
+                    root.parameters.update({params[i]: params[i]})
         init_tree(root, data, 0, root.parameters)
-        for i in range(len(params) * strict):
-            if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + params[i] + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
-                raise Exception(f"there is no \"{params[i]}\" in function: {data}")
         return root
+        # root = Node()
+        # root.name = name
+        # for i in params:
+        #     root.parameters.update({i: i})
+        # root.data_as_str = str(data)
+        # init_tree(root, data, 0, root.parameters)
+        # for i in range(len(params) * strict):
+        #     if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + params[i] + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
+        #         raise Exception(f"there is no \"{params[i]}\" in function: {data}")
+        # return root
 
     def __str__(self):
         return f"{self.name}{list(self.parameters.keys())}: {self.data_as_str}"

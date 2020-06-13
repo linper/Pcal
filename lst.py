@@ -8,10 +8,11 @@ exec_pattern = re.compile(r"^([\w\d_]+(\([\w\d\s_]+\))?)+|^([\w\d(){}@#$;+*\-.,<
 # list_exec_pattern_no_sp = re.compile(r"^\[[\w()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_comp_pattern = re.compile(r"^[\s#@]+$")
 # basic_list_pattern = re.compile(r"^\[[\w,#@]+\]\s*$")
-basic_list_pattern = re.compile(r"^\[[\w(){}#@$;\[\]+*\-/.,<>^%=!|&\"\'_]+\]\s*$")
+basic_list_pattern = re.compile(r"^\[[\w\s(){}#@$;\[\]+*\-/.,<>^%=!|&\"\'_]+\]\s*$")
 number_pattern = re.compile(r"(^(0[bB])[01]+$)|(^(0[oO])[0-7]+$)|(^(0[xX])[0-9a-fA-F]+$)|(^[-+]?[0-9]*$)|(^[-+]?"
                             r"[0-9]*\.[0-9]+$)|(^[-+]?[0-9]*\.?[0-9]+e[-+]?[0-9]+$)")
-list_exec_pattern = re.compile(r"^\[[\w\s()@$#\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_@#$]+(?:\sin\s)[\w\s()@$\[\]+*\-/.,^%!|&\"_]+\]\s*$")
+list_exec_pattern = re.compile(r"^[/[][\w\s()@$#\[\]+*\-/.<>=,^%!|&\"_]+[\w\s()@$#\[\]+*\-/.<>=,^%!|&\"_]*(?:\sfor\s)[\w\s,_@#$]+(?:\sin\s)[\w\s()@$\[\]+*\-/.,<>=^%!|&\"_]+\]\s*$")
+# list_exec_pattern = re.compile(r"^\[[\w\s()@$#\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_@#$]+(?:\sin\s)[\w\s()@$\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 none_pattern = re.compile(r"([\s]+)|(^$)")
 string_list_pattern = re.compile(r"\"[\w_]+\"\s*")
 string_pattern = re.compile(r"\'[\w_]+\'\s*")
@@ -34,7 +35,7 @@ def make_list(data_string, cmds):
         for cmd in cmds:
             P.parse(cmd)
         for p in funs:
-            e = p[0]
+
             if re.fullmatch(number_pattern, p):
                 result = f.var_from_str(p)
                 res_list.append(result)
@@ -96,10 +97,10 @@ def make_list(data_string, cmds):
         if re.fullmatch(none_pattern, lvl2_1[0]):
             t0_name = None
         else:
-            main_function = f.Node.init_root("temp", lvl2_1[0], for_args, strict=False)
+            main_function = f.Node.init_root("temp", lvl2_1[0], for_args, superss=True)
             t0_name = tp.add_t(main_function, len(for_args))
         if len(lvl2_1) == 1:
-            return lst_iterate_f(iter_list, for_args, t0_name, cmds=cmds_group)
+            return lst_iterate_f(iter_list, for_args, t0_name, _cmds=cmds_group)
     else:
         raise Exception("list comp syntax error")
     if len(lvl2_1) > 2:
@@ -109,23 +110,23 @@ def make_list(data_string, cmds):
     lvl3[0] = lvl3[0].replace("@", "")
     cmds_group[0] = cmds[c_count: c_count + _c_count]
     c_count += _c_count
-    if_function = f.Node.init_root("temp", lvl3[0], for_args, strict=False)
+    if_function = f.Node.init_root("temp", lvl3[0], for_args, superss=True)
     t1_name = tp.add_t(if_function, len(for_args))
     if len(lvl3) == 1:
-        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, cmds=cmds_group)
+        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, _cmds=cmds_group)
     elif len(lvl3) == 2:
         _c_count = lvl3[0].count("@")
         lvl3[1] = lvl3[1].replace("@", "")
         cmds_group[2] = cmds[c_count: c_count + _c_count]
         c_count += _c_count
-        else_function = f.Node.init_root("temp", lvl3[1], for_args, strict=False)
+        else_function = f.Node.init_root("temp", lvl3[1], for_args, superss=True)
         t2_name = tp.add_t(else_function, len(for_args))
-        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, t2_name, cmds=cmds_group)
+        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, t2_name, _cmds=cmds_group)
     else:
         raise Exception("too much else statements")
 
 
-def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=None, cmds=([], [], [])):
+def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=None, _cmds=([], [], [])):
     """executes advanced list (list_comp)"""
     min_length = float("inf")
     for l in lst:
@@ -133,10 +134,12 @@ def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=N
             min_length = len(l)
     ans = []
     for i in range(min_length):
+        cmds = []
         _ls = []
         for ls in lst:
             _ls.append(ls[i])
-        for k in range(len(cmds)):  #TODO not working
+        for k in range(len(_cmds)):  #TODO not working
+            cmds.append(_cmds[k].copy())
             for j in range(len(cmds[k])):
                 cs = cmds[k][j].split("$")
                 csum = cs[0]
@@ -151,22 +154,26 @@ def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=N
                             found = True
                             # l = c_part[0: len(iter_args[it])]
                             # csum = csum + str(l)
-                            csum = csum + str(_ls[it]) + str(c_part[len(iter_args[it]):])
+                            csum = csum + str(lst[it][i]) + str(c_part[len(iter_args[it]):])
                     if not found:
                         raise Exception("command variable not found")
                 cmds[k][j] = csum
         ls_str = ",".join(iter_args)
+        dict_args = {k: v for k, v in zip(iter_args, _ls)}
+        # dict_args = {k: v for k, v in zip(iter_args, [str(l) for l in _ls])}
+        # ls_str = ",".join([str(l) for l in _ls])
+        # itf_args = {{k: v} for k, v in zip(iter_args, _ls)}
         for cmd in cmds[0]:
             P.parse(cmd)
-        if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str + ")", [], strict=False))):
+        if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str + ")", dict_args, superss=True))):
             for cmd in cmds[1]:
                 P.parse(cmd)
             if main_func is not None:
-                ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str + ")", [], strict=False)))
+                ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str + ")", dict_args, superss=True)))
         elif secondary_func is not None:
             for cmd in cmds[2]:
                 P.parse(cmd)
-            ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str + ")", [], strict=False)))
+            ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str + ")", dict_args, superss=True)))
     return ans
 
 

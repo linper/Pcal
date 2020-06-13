@@ -82,7 +82,7 @@ def parse(line, inner=True):
                         exec.addf(*parts)
                     else:
                         raise Exception("assignment failed")
-            elif re.fullmatch(exec_pattern, ln) and not inner:
+            elif re.fullmatch(exec_pattern, ln):
                 for cmd in loc_cmds:
                     parse(cmd)
                 if re.fullmatch(number_pattern, ln):
@@ -95,7 +95,7 @@ def parse(line, inner=True):
                 print(result)
                 pyperclip.copy(str(result))
                 results.append(result)
-            elif re.fullmatch(list_exec_pattern, ln) and not inner:
+            elif re.fullmatch(list_exec_pattern, ln):
                 result = lst.make_list(lst.separate_list_comp(ln, clean=True)[1][0], loc_cmds)
                 print(result)
                 pyperclip.copy(str(result))

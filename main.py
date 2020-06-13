@@ -1,6 +1,6 @@
 from sys import argv, exit
 import Parser as p
-# import readline
+import readline
 import exec
 
 

@@ -51,5 +51,8 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(p.parse("g:range(5); g[1]:2; g[1]; rm g", False), [2])
 
 
+    def test_parameter_in_inner_cmd(self):
+        self.assertEqual(p.parse("g:[\"qwertyu\"]; [{$i:$j*2} for i,j in g, range(5)]; [q, w, r, t]; rm g; rm q; rm w; rm r; rm t", False), [[], [0.0, 2.0, 6.0, 8.0]])
+
 if __name__ == '__main__':
     unittest.main()
