@@ -149,6 +149,14 @@ def acos(*args):
     return math.acos(args[0])
 
 
+def rad(*args):
+    return math.radians(args[0])
+
+
+def deg(*args):
+    return math.degrees(args[0])
+
+
 def floor(*args):
     return math.floor(args[0])
 
@@ -216,6 +224,7 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
         "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
+        "rad": (rad, 1), "deg": (deg, 1),
         "floor": (floor, 1), "ceil": (ceil, 1),
         "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf")), "cat": (cat, float("inf")),
         "fill": (fill, 2), "str": (_str, 256)}
@@ -231,7 +240,10 @@ constants = {"e": e, "pi": pi}
 def addv(*args, **kwargs):
     """"command to add global variable"""
     if all_names.__contains__(kwargs.get("name")) or all_names.__contains__(args[0]):
-        raise Exception("name already exists")
+        if not vars.__contains__(kwargs.get("name")) and not vars.__contains__(args[0]):
+            raise Exception("name already exists, and it can't be overridden")
+        else:
+            print("variable will be overridden")
     if kwargs.keys().__contains__("name"):
         name = str(kwargs.get("name"))
     elif len(args) >= 2:
@@ -264,12 +276,17 @@ def addv(*args, **kwargs):
 
 def addf(*args, **kwargs):
     """"command to add global function"""
-    if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
+    if kwargs.keys().__contains__("name") and \
+            (not all_names.__contains__(kwargs.get("name")) or u_funs.__contains__(kwargs.get("name"))):
+        if u_funs.__contains__(kwargs.get("name")):
+            print("function " + str(kwargs.get("name")) + " will be overridden")
         name = kwargs.get("name")
-    elif len(args) >= 3 and not all_names.__contains__(args[0]):
+    elif len(args) >= 3 and (not all_names.__contains__(args[0]) or u_funs.__contains__(args[0])):
+        if u_funs.__contains__(args[0]):
+            print("function " + str(kwargs.get("name")) + " will be overridden")
         name = args[0]
     else:
-        raise Exception("no name or such name exists")
+        raise Exception("name missing")
     if kwargs.keys().__contains__("func"):
         func = kwargs.get("func")
     elif len(args) >= 3:
@@ -296,12 +313,17 @@ def addf(*args, **kwargs):
 def addl(*args, **kwargs):
     """"command to add global list"""
     lst = None
-    if kwargs.keys().__contains__("name") and not all_names.__contains__(kwargs.get("name")):
+    if kwargs.keys().__contains__("name") and \
+            (not all_names.__contains__(kwargs.get("name")) or lsts.__contains__(kwargs.get("name"))):
+        if lsts.__contains__(kwargs.get("name")):
+            print("list " + str(kwargs.get("name")) + " will be overridden")
         name = kwargs.get("name")
-    elif len(args) >= 2 and not all_names.__contains__(args[0]):
+    elif len(args) >= 2 and (not all_names.__contains__(args[0]) or lsts.__contains__(args[0])):
+        if lsts.__contains__(args[0]):
+            print("list " + str(kwargs.get("name")) + " will be overridden")
         name = args[0]
     else:
-        raise Exception("no name or such name exists")
+        raise Exception("name missing")
     # if isinstance(args[1][0], str):
     if isinstance(args[1], str):
         _, list_comps = l.separate_list_comp(" ".join(args[1: len(args) - 1]), clean=True)

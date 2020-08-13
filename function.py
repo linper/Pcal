@@ -19,7 +19,7 @@ level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "*", "/"
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
-single_eq_pattern = re.compile(r"[^!=](?:=)[^=]")
+single_eq_pattern = re.compile(r"[^!<>=](?:=)[^=]")
 bad_eq_pattern = re.compile(r"^[=]")
 
 
@@ -206,6 +206,8 @@ def get_level(data, level):
             break
     fixed = []
     if level + 1 < len(levels):
+        if re.search(single_eq_pattern, data):
+            raise Exception("single equality sign not allowed")
         strings = data.replace(" ", "").split(matcher)
         for s in strings:
             if re.match(bad_eq_pattern, s):
