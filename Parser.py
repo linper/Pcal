@@ -95,8 +95,7 @@ def parse(line, inner=True):
                 if isinstance(result, list):
                     # print([str(n) for n in result])
                     result = [n.data for n in result]
-                else:
-                    print(result)
+                print(result)
                 pyperclip.copy(str(result))
                 results.append(result)
             elif re.fullmatch(list_exec_pattern, ln):

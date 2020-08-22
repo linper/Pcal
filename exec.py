@@ -189,6 +189,14 @@ def subl(ls, start=0, end=None, step=1):
     return ls[start:end:step]
 
 
+def mean(*args):
+    args = __flatten_args(args)
+    _sum = 0.0
+    for item in args:
+        _sum += item.data
+    return _sum / len(args)
+
+
 def length(*args):
     return len(__flatten_args(args))
 
@@ -200,12 +208,12 @@ def cat(*args):
 def fill(*args):
     if isinstance(args[0], list):
         for i in range(len(args[0])):
-            args[0][i] = args[1]
+            args[0][i].data = args[1]
         return args[0]
     else:
         new_list = []
         for i in range(args[0]):
-            new_list.append(args[1])
+            new_list.append(f.nodefy(args[1]))
         return new_list
 
 
@@ -216,7 +224,7 @@ def _str(*args):
     return new_str
 
 
-list_funs = [subl, forward, fill]  # iterable arguments will not be flattened
+list_funs = [subl, forward, fill, mean, length]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
         "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
@@ -227,7 +235,7 @@ funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=":
         "rad": (rad, 1), "deg": (deg, 1),
         "floor": (floor, 1), "ceil": (ceil, 1),
         "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf")), "cat": (cat, float("inf")),
-        "fill": (fill, 2), "str": (_str, 256)}
+        "fill": (fill, 2), "str": (_str, 256), "mean": (mean, 256)}
 
 # constants
 pi = math.pi
@@ -422,7 +430,7 @@ def save(*args, **kwargs):
         raise Exception("need file name without extension")
     path = os.path.abspath(os.path.split(os.path.abspath(__file__))[0] + "/saved/" + name + '.pkl')
     with open(path, 'wb') as f:
-        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump([u_funs, vars, lsts], f, pickle.HIGHEST_PROTOCOL)
     print("saved to file: " + path)
     return None
 
@@ -437,6 +445,8 @@ def load(*args, **kwargs):
     global u_funs
     global vars
     global lsts
+    global all_names
+    all_names = all_names_default.copy()
     if kwargs.keys().__contains__("file"):
         name = kwargs.get("file")
     elif args[0] is not None:
@@ -445,14 +455,14 @@ def load(*args, **kwargs):
         raise Exception("need file name without extension")
     path = os.path.abspath(os.path.split(os.path.abspath(__file__))[0] + "/saved/" + name + '.pkl')
     with open(path, 'rb') as f:
-        data = pickle.load(f)
-        all_names = data.get("na")
-        commands = data.get("cmd")
-        constants = data.get("const")
-        funs = data.get("func")
-        u_funs = data.get("udf")
-        vars = data.get("var")
-        lsts = data.get("lst")
+        _data = pickle.load(f)
+        u_funs = _data[0]
+        data.update({"udf": u_funs})
+        vars = _data[1]
+        data.update({"var": vars})
+        lsts = _data[2]
+        data.update({"lst": lsts})
+        __collect_names()
     print("loaded file: " + path)
     return None
 
@@ -476,6 +486,7 @@ def __format(container):
 
 commands = {"addv": addv, "addf": addf, "addl": addl, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
 all_names = ["if", "else", "for", "in"]
+all_names_default = ["if", "else", "for", "in"]
 data = {"na": all_names, "cmd": commands, "const": constants, "func": funs, "udf": u_funs, "var": vars, "lst": lsts}
 data.update({"data": data})
 cmd_func = ["addl"]
@@ -490,6 +501,15 @@ def __collect_names():
         if not all_names.__contains__(c):
             all_names.append(c)
     for c in vars.keys():
+        if not all_names.__contains__(c):
+            all_names.append(c)
+    for c in lsts.keys():
+        if not all_names.__contains__(c):
+            all_names.append(c)
+    for c in funs.keys():
+        if not all_names.__contains__(c):
+            all_names.append(c)
+    for c in commands.keys():
         if not all_names.__contains__(c):
             all_names.append(c)
 
