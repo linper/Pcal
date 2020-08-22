@@ -239,10 +239,12 @@ constants = {"e": e, "pi": pi}
 # commands
 def addv(*args, **kwargs):
     """"command to add global variable"""
+    override = False
     if all_names.__contains__(kwargs.get("name")) or all_names.__contains__(args[0]):
         if not vars.__contains__(kwargs.get("name")) and not vars.__contains__(args[0]):
             raise Exception("name already exists, and it can't be overridden")
         else:
+            override = True
             print("variable will be overridden")
     if kwargs.keys().__contains__("name"):
         name = str(kwargs.get("name"))
@@ -258,17 +260,31 @@ def addv(*args, **kwargs):
         raise Exception("no value")
     if re.fullmatch(number_pattern, value):
         value = f.var_from_str(value)
+        if not override:
+            value_node = f.Node(value, name=name)
+        else:
+            value_node = vars.get(name)
+            value_node.data = value
+            value_node.name = str(value)
     elif re.fullmatch(exec_pattern, value):
         func = f.Node.init_root("f", value, [])
         value = f.execute(func)
+        if not override:
+            value_node = f.Node(value, name=name)
+        else:
+            value_node = vars.get(name)
+            value_node.data = value
+            value_node.name = str(value)
         if isinstance(value, list):
             return addl(name, value)
     else:
         raise Exception("value is not a number")
     name = str(name)
     if re.fullmatch(name_pattern, name):
-        vars.update({name: value})
-        all_names.append(name)
+        vars.update({name: value_node})
+        # vars.update({name: value})
+        if not all_names.__contains__(name):
+            all_names.append(name)
         return value
     else:
         raise Exception("bad name pattern")
@@ -337,11 +353,18 @@ def addl(*args, **kwargs):
         raise Exception("no list")
     if not isinstance(lst, list):
         raise Exception("value is not a list")
+    else:
+        node_list = []
+        for item in lst:
+            if isinstance(item, f.Node):
+                node_list.append(item)
+            else:
+                l.make_list_node(node_list, item)
     name = str(name)
     if re.fullmatch(name_pattern, name):
-        lsts.update({name: lst})
+        lsts.update({name: node_list})
         all_names.append(name)
-        return lst
+        return node_list
     else:
         raise Exception("bad name pattern")
 

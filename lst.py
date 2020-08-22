@@ -24,6 +24,25 @@ if_pattern = re.compile(r"\s(?:if)\s")
 else_pattern = re.compile(r"\s(?:else)\s")
 
 
+def make_list_node(lst, data):
+    """"converts regular data e.g. int,  float, to 'list' compatible Node """
+    data = str(data)
+    if re.fullmatch(number_pattern, data):
+        result = f.nodefy(f.var_from_str(data, node_return=True))
+        lst.append(result)
+    elif re.fullmatch(string_list_pattern, data):
+        for s in data.strip("\""):
+            lst.append(f.nodefy(s))
+    elif re.fullmatch(string_pattern, data):
+        lst.append(f.nodefy(data.strip("\'")))
+    else:
+        result = f.nodefy(f.var_from_str(data, force_ex=False, node_return=True))
+        if result is None:
+            function = f.Node.init_root("temp", data, [])
+            result = f.nodefy(f.execute(function))
+        lst.append(result)
+
+
 def make_list(data_string, cmds):
     """"parses simple and advanced list strings into lists"""
     data, f_list = separate_list_comp(data_string)
@@ -35,21 +54,21 @@ def make_list(data_string, cmds):
         for cmd in cmds:
             P.parse(cmd)
         for p in funs:
-
-            if re.fullmatch(number_pattern, p):
-                result = f.var_from_str(p)
-                res_list.append(result)
-            elif re.fullmatch(string_list_pattern, p):
-                for s in p.strip("\""):
-                    res_list.append(s)
-            elif re.fullmatch(string_pattern, p):
-                res_list.append(p.strip("\'"))
-            else:
-                result = f.var_from_str(p, force_ex=False)
-                if result is None:
-                    function = f.Node.init_root("temp", p, [])
-                    result = f.execute(function)
-                res_list.append(result)
+            make_list_node(res_list, p)
+            # if re.fullmatch(number_pattern, p):
+            #     result = f.nodefy(f.var_from_str(p, node_return=True))
+            #     res_list.append(result)
+            # elif re.fullmatch(string_list_pattern, p):
+            #     for s in p.strip("\""):
+            #         res_list.append(s)
+            # elif re.fullmatch(string_pattern, p):
+            #     res_list.append(p.strip("\'"))
+            # else:
+            #     result = f.nodefy(f.var_from_str(p, force_ex=False, node_return=True))
+            #     if result is None:
+            #         function = f.Node.init_root("temp", p, [])
+            #         result = f.nodefy(f.execute(function))
+            #     res_list.append(result)
         return res_list
     iter_list = []
     lvl1 = re.split(for_pattern, data)
@@ -138,7 +157,7 @@ def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=N
         _ls = []
         for ls in lst:
             _ls.append(ls[i])
-        for k in range(len(_cmds)):  #TODO not working
+        for k in range(len(_cmds)):
             cmds.append(_cmds[k].copy())
             for j in range(len(cmds[k])):
                 cs = cmds[k][j].split("$")

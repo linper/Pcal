@@ -92,14 +92,19 @@ def parse(line, inner=True):
                     if result is None:
                         function = f.Node.init_root("temp", ln, [])
                         result = f.execute(function)
-                print(result)
+                if isinstance(result, list):
+                    # print([str(n) for n in result])
+                    result = [n.data for n in result]
+                else:
+                    print(result)
                 pyperclip.copy(str(result))
                 results.append(result)
             elif re.fullmatch(list_exec_pattern, ln):
                 result = lst.make_list(lst.separate_list_comp(ln, clean=True)[1][0], loc_cmds)
-                print(result)
-                pyperclip.copy(str(result))
-                results.append(result)
+                _result = [n.data for n in result]
+                print(_result)
+                pyperclip.copy(str(_result))
+                results.append(_result)
             else:
                 raise Exception("syntax error")
         return results

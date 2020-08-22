@@ -64,8 +64,18 @@ class Node:
         #         raise Exception(f"there is no \"{params[i]}\" in function: {data}")
         # return root
 
-    def __str__(self):
-        return f"{self.name}{list(self.parameters.keys())}: {self.data_as_str}"
+    def __str__(self): # todo list printing format is horible
+        if len(self.parameters.keys()) != 0 and self.name is not None:
+            return f"{self.name}{list(self.parameters.keys())}: {self.data_as_str}"
+        elif self.data_as_str is not None and self.name is not None:
+            return f"{self.name}: {self.data_as_str}"
+        elif self.name is not None:
+            return f"{self.name}: {self.data}"
+        else:
+            return f"{self.data}"
+
+    # def get_data(self):
+    #     return self.data
 
     def __contains__(self, item):
         if self.data == item:
@@ -85,6 +95,17 @@ class Node:
             return self.data(d)
         else:
             return iterate(self, args[0])
+
+
+def nodefy(value, params=None):
+    """"if value is not a Node turns it to Node"""
+    if value is None:
+        return None
+    if params is None:
+        params = {}
+    if not isinstance(value, Node):
+        value = Node(value, params=params)
+    return value
 
 
 def execute(root):
@@ -108,6 +129,7 @@ def iterate(root, params):
             l.append(iterate(n, params))
         if isinstance(root.data, list):
             return root.data[int(l[0])]
+        l = [item.data if isinstance(item, Node) else item for item in l]
         return root.data(*l)
     elif params.keys().__contains__(str(root.data)):
         return params.get(str(root.data))
@@ -189,7 +211,12 @@ def add_single(parent, data, params):
     data.strip(',')
     par = re.split(r",", data)
     for p in par:
-        parent.nodes.append(Node(var_from_str(p, params), params=params))
+        result = nodefy(var_from_str(p, params, node_return=True), params=params)
+        # result = var_from_str(p, params, node_return=True)
+        # if not isinstance(result, Node):
+        #     result = Node(result, params=params)
+        parent.nodes.append(result)
+        # parent.nodes.append(Node(var_from_str(p, params), params=params))
 
 
 def get_level(data, level):
@@ -346,7 +373,7 @@ def dress_up_functions(h_string_arr, inner, swap_char='#'):
     return function_arr
 
 
-def var_from_str(data, params=None, force_ex=True):
+def var_from_str(data, params=None, force_ex=True, node_return=False):
     """"parses variable, constant-variable or non_decimal system number to number"""
     sign = 1
     if len(data) != 0 and data[0] == '-':
@@ -367,11 +394,27 @@ def var_from_str(data, params=None, force_ex=True):
         else:
             raise Exception("parsing error")
     elif len(data) != 0 and params is not None and params.keys().__contains__(data):
-        return sign * params.get(data)
+        _data = params.get(data)
+        if not node_return:
+            if isinstance(_data, Node):
+                return sign * params.get(data).data
+            else:
+                return sign * params.get(data)
+        else:
+            if sign == -1:
+                return Node.init_root("neg_f", "0-" + _data.data, [])
+            else:
+                return _data
     elif len(data) != 0 and exec.data.get("const").keys().__contains__(data):
         return sign * exec.data.get("const").get(data)
     elif len(data) != 0 and exec.data.get("var").keys().__contains__(data):
-        return sign * exec.data.get("var").get(data)
+        if not node_return:
+            return sign * exec.data.get("var").get(data).data
+        else:
+            if sign == -1:
+                return Node.init_root("neg_f", "0-" + data, [])
+            else:
+                return exec.data.get("var").get(data)
     elif len(data) != 0 and exec.data.get("lst").keys().__contains__(data):
         return exec.data.get("lst").get(data)
     elif len(data) != 0 and tp.temps.keys().__contains__(data):
