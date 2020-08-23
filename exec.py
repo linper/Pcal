@@ -224,7 +224,7 @@ def _str(*args):
     return new_str
 
 
-list_funs = [subl, forward, fill, mean, length]  # iterable arguments will not be flattened
+list_funs = [subl, forward, fill]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
         "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
@@ -246,7 +246,59 @@ constants = {"e": e, "pi": pi}
 
 # commands
 def addv(*args, **kwargs):
-    """"command to add global variable"""
+    """"command to add global dynamic variable"""
+    override = False
+    if all_names.__contains__(kwargs.get("name")) or all_names.__contains__(args[0]):
+        if not vars.__contains__(kwargs.get("name")) and not vars.__contains__(args[0]):
+            raise Exception("name already exists, and it can't be overridden")
+        else:
+            override = True
+            print("variable will be overridden")
+    if kwargs.keys().__contains__("name"):
+        name = str(kwargs.get("name"))
+    elif len(args) >= 2:
+        name = str(args[0])
+    else:
+        raise Exception("name missing")
+    if kwargs.keys().__contains__("value"):
+        value = str(kwargs.get("value"))
+    elif len(args) >= 2:
+        value = str(args[1])
+    else:
+        raise Exception("no value")
+    if re.fullmatch(number_pattern, value):
+        value = f.var_from_str(value)
+        if not override:
+            value_node = f.Node(value, name=name)
+        else:
+            value_node = vars.get(name)
+            value_node.data = value
+            value_node.name = str(value)
+    elif re.fullmatch(exec_pattern, value):
+        value = f.Node.init_root("f", value, [])
+        value_executed = f.execute(value)
+        if isinstance(value_executed, list):
+            return addl(name, value_executed)
+        if not override:
+            value_node = f.Node(value, name=name)
+        else:
+            value_node = vars.get(name)
+            value_node.data = value
+            value_node.name = str(value)
+    else:
+        raise Exception("value is not a number")
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        vars.update({name: value_node})
+        if not all_names.__contains__(name):
+            all_names.append(name)
+        return value
+    else:
+        raise Exception("bad name pattern")
+
+
+def addcv(*args, **kwargs):
+    """"command to add global static variable"""
     override = False
     if all_names.__contains__(kwargs.get("name")) or all_names.__contains__(args[0]):
         if not vars.__contains__(kwargs.get("name")) and not vars.__contains__(args[0]):
@@ -290,7 +342,6 @@ def addv(*args, **kwargs):
     name = str(name)
     if re.fullmatch(name_pattern, name):
         vars.update({name: value_node})
-        # vars.update({name: value})
         if not all_names.__contains__(name):
             all_names.append(name)
         return value
@@ -319,7 +370,6 @@ def addf(*args, **kwargs):
         raise Exception("no function")
     params = [(k, v) for k, v in kwargs.items() if re.fullmatch(param_pattern, k)]
     params.sort(key=lambda x: x[0])
-    # params.append(args[1:-1])
     for i in range(1, len(args) - 1):
         params.append(args[i])
     if len(params) == 0:
@@ -335,7 +385,7 @@ def addf(*args, **kwargs):
 
 
 def addl(*args, **kwargs):
-    """"command to add global list"""
+    """"command to add global dynamic list"""
     lst = None
     if kwargs.keys().__contains__("name") and \
             (not all_names.__contains__(kwargs.get("name")) or lsts.__contains__(kwargs.get("name"))):
@@ -348,7 +398,48 @@ def addl(*args, **kwargs):
         name = args[0]
     else:
         raise Exception("name missing")
-    # if isinstance(args[1][0], str):
+    if isinstance(args[1], str):
+        _, list_comps = l.separate_list_comp(" ".join(args[1: len(args) - 1]), clean=True)
+        if len(list_comps) == 1:
+            lst = l.make_list(list_comps[0], args[-1])
+    elif kwargs.keys().__contains__("list"):
+        lst = kwargs.get("list")
+    elif len(args) >= 2:
+        lst = args[1]
+    else:
+        raise Exception("no list")
+    if not isinstance(lst, list):
+        raise Exception("value is not a list")
+    else:
+        node_list = []
+        for item in lst:
+            if isinstance(item, f.Node):
+                node_list.append(item)
+            else:
+                l.make_list_node(node_list, item)
+    name = str(name)
+    if re.fullmatch(name_pattern, name):
+        lsts.update({name: node_list})
+        all_names.append(name)
+        return node_list
+    else:
+        raise Exception("bad name pattern")
+
+
+def addcl(*args, **kwargs):
+    """"command to add global static list"""
+    lst = None
+    if kwargs.keys().__contains__("name") and \
+            (not all_names.__contains__(kwargs.get("name")) or lsts.__contains__(kwargs.get("name"))):
+        if lsts.__contains__(kwargs.get("name")):
+            print("list " + str(kwargs.get("name")) + " will be overridden")
+        name = kwargs.get("name")
+    elif len(args) >= 2 and (not all_names.__contains__(args[0]) or lsts.__contains__(args[0])):
+        if lsts.__contains__(args[0]):
+            print("list " + str(kwargs.get("name")) + " will be overridden")
+        name = args[0]
+    else:
+        raise Exception("name missing")
     if isinstance(args[1], str):
         _, list_comps = l.separate_list_comp(" ".join(args[1: len(args) - 1]), clean=True)
         if len(list_comps) == 1:
@@ -484,7 +575,7 @@ def __format(container):
             count += 1
 
 
-commands = {"addv": addv, "addf": addf, "addl": addl, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
+commands = {"addv": addv, "addcv": addcv, "addf": addf, "addl": addl, "addcl": addcl, "close": close, "exit": close, "quit": close, "ls": ls, "load": load, "rm": rm, "save": save}
 all_names = ["if", "else", "for", "in"]
 all_names_default = ["if", "else", "for", "in"]
 data = {"na": all_names, "cmd": commands, "const": constants, "func": funs, "udf": u_funs, "var": vars, "lst": lsts}

@@ -24,7 +24,7 @@ if_pattern = re.compile(r"\s(?:if)\s")
 else_pattern = re.compile(r"\s(?:else)\s")
 
 
-def make_list_node(lst, data):
+def make_list_node(lst, data, const=False):
     """"converts regular data e.g. int,  float, to 'list' compatible Node """
     data = str(data)
     if re.fullmatch(number_pattern, data):
@@ -39,11 +39,19 @@ def make_list_node(lst, data):
         result = f.nodefy(f.var_from_str(data, force_ex=False, node_return=True))
         if result is None:
             function = f.Node.init_root("temp", data, [])
-            result = f.nodefy(f.execute(function))
-        lst.append(result)
+            if const:
+                result = f.nodefy(f.execute(function))
+                lst.append(result)
+            else:
+                lst.append(function)
+        else:
+            if const:
+                lst.append(f.nodefy(result.data))
+            else:
+                lst.append(result)
 
 
-def make_list(data_string, cmds):
+def make_list(data_string, cmds, const=False):
     """"parses simple and advanced list strings into lists"""
     data, f_list = separate_list_comp(data_string)
     if re.fullmatch(basic_list_pattern, "[" + data_string + "]") and not re.fullmatch(list_exec_pattern, "[" + data_string + "]"):
@@ -54,21 +62,7 @@ def make_list(data_string, cmds):
         for cmd in cmds:
             P.parse(cmd)
         for p in funs:
-            make_list_node(res_list, p)
-            # if re.fullmatch(number_pattern, p):
-            #     result = f.nodefy(f.var_from_str(p, node_return=True))
-            #     res_list.append(result)
-            # elif re.fullmatch(string_list_pattern, p):
-            #     for s in p.strip("\""):
-            #         res_list.append(s)
-            # elif re.fullmatch(string_pattern, p):
-            #     res_list.append(p.strip("\'"))
-            # else:
-            #     result = f.nodefy(f.var_from_str(p, force_ex=False, node_return=True))
-            #     if result is None:
-            #         function = f.Node.init_root("temp", p, [])
-            #         result = f.nodefy(f.execute(function))
-            #     res_list.append(result)
+            make_list_node(res_list, p, const=const)
         return res_list
     iter_list = []
     lvl1 = re.split(for_pattern, data)
@@ -88,7 +82,6 @@ def make_list(data_string, cmds):
         if f.var_from_str(v, force_ex=False) is not None:
             raise Exception("wrong argument name: " + v)
     h_count = 0
-    # for l in lvl2_2[1].split(","):
     _f_data, _f_list = f.strip_functions(lvl2_2[1], "([", ")]", "@")
     _f_data = [s.strip() for s in re.split(r",", _f_data)]
     funs = f.dress_up_functions(_f_data, _f_list, swap_char='@')
@@ -119,7 +112,7 @@ def make_list(data_string, cmds):
             main_function = f.Node.init_root("temp", lvl2_1[0], for_args, superss=True)
             t0_name = tp.add_t(main_function, len(for_args))
         if len(lvl2_1) == 1:
-            return lst_iterate_f(iter_list, for_args, t0_name, _cmds=cmds_group)
+            return lst_iterate_f(iter_list, for_args, t0_name, _cmds=cmds_group, const=const)
     else:
         raise Exception("list comp syntax error")
     if len(lvl2_1) > 2:
@@ -132,7 +125,7 @@ def make_list(data_string, cmds):
     if_function = f.Node.init_root("temp", lvl3[0], for_args, superss=True)
     t1_name = tp.add_t(if_function, len(for_args))
     if len(lvl3) == 1:
-        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, _cmds=cmds_group)
+        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, _cmds=cmds_group, const=const)
     elif len(lvl3) == 2:
         _c_count = lvl3[0].count("@")
         lvl3[1] = lvl3[1].replace("@", "")
@@ -140,12 +133,12 @@ def make_list(data_string, cmds):
         c_count += _c_count
         else_function = f.Node.init_root("temp", lvl3[1], for_args, superss=True)
         t2_name = tp.add_t(else_function, len(for_args))
-        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, t2_name, _cmds=cmds_group)
+        return lst_iterate_f(iter_list, for_args, t0_name, t1_name, t2_name, _cmds=cmds_group, const=const)
     else:
         raise Exception("too much else statements")
 
 
-def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=None, _cmds=([], [], [])):
+def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=None, _cmds=([], [], []), const=False):
     """executes advanced list (list_comp)"""
     min_length = float("inf")
     for l in lst:
@@ -171,28 +164,29 @@ def lst_iterate_f(lst, iter_args, main_func=None, if_func=None, secondary_func=N
                             ind = -1
                         if ind == 0 and not re.fullmatch(literal_pattern, c_part[len(iter_args[it])]):
                             found = True
-                            # l = c_part[0: len(iter_args[it])]
-                            # csum = csum + str(l)
                             csum = csum + str(lst[it][i]) + str(c_part[len(iter_args[it]):])
                     if not found:
                         raise Exception("command variable not found")
                 cmds[k][j] = csum
         ls_str = ",".join(iter_args)
-        dict_args = {k: v for k, v in zip(iter_args, _ls)}
-        # dict_args = {k: v for k, v in zip(iter_args, [str(l) for l in _ls])}
-        # ls_str = ",".join([str(l) for l in _ls])
-        # itf_args = {{k: v} for k, v in zip(iter_args, _ls)}
+        dict_args = {k: f.execute(v) for k, v in zip(iter_args, _ls)}
         for cmd in cmds[0]:
             P.parse(cmd)
         if if_func is None or bool(f.execute(f.Node.init_root("t", if_func + "(" + ls_str + ")", dict_args, superss=True))):
             for cmd in cmds[1]:
                 P.parse(cmd)
             if main_func is not None:
-                ans.append(f.execute(f.Node.init_root("t", main_func + "(" + ls_str + ")", dict_args, superss=True)))
+                if const:
+                    ans.append(f.nodefy(f.execute(f.Node.init_root("t", main_func + "(" + ls_str + ")", dict_args, superss=True))))
+                else:
+                    ans.append(f.Node.init_root("t", main_func + "(" + ls_str + ")", dict_args, superss=True))
         elif secondary_func is not None:
             for cmd in cmds[2]:
                 P.parse(cmd)
-            ans.append(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str + ")", dict_args, superss=True)))
+            if const:
+                ans.append(f.nodefy(f.execute(f.Node.init_root("t", secondary_func + "(" + ls_str + ")", dict_args, superss=True))))
+            else:
+                ans.append(f.Node.init_root("t", secondary_func + "(" + ls_str + ")", dict_args, superss=True))
     return ans
 
 

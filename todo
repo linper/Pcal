@@ -1,5 +1,5 @@
 DONE rad_to_deg & deg_to_rad functions
 DONE global variables can't change in added udf's
 DONE updates corrupt saved work
-every value should be defined as some dynamic function
+DONE every value should be defined as some dynamic function
 

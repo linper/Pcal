@@ -11,8 +11,8 @@ import pyperclip
 func_pattern = re.compile(r"^([\w\d(){};@$+*\-/.,<>^=%!|&\"_]+)\s*$")
 command_pattern = re.compile(r"^[\w\d_\s]+(\s+[\w\d(){};@$+\[\]*\-/.,<>^%!=|&\"_]+\s*)*$")
 # assignment_pattern = re.compile(r"^[\w\d\s_]+:\s?([\w\d()+*\-/.,^%!|&\"_])|(\[[\w\d()+*\-/.,^%!|&\"_]\])+\s*$")
-assignment_pattern = re.compile(r"^(?:(?:[\w\s_]+)|(?:[\w_]+\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\])):\s?(?:(?:[\w\s(){};@$\[\]+*\-/.,^=%!|&\"_]+)|(?:\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\]))\s*$")
-list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\'_]+\]\s*$")
+assignment_pattern = re.compile(r"^(?:(?:[\w\s_]+)|(?:[\w_]+\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\])):=?\s?(?:(?:[\w\s(){};@$\[\]+*\-/.,^=%!|&\"_]+)|(?:\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\']+\]))\s*$")
+list_assignment_pattern = re.compile(r"^[\w\s_]+:=?\s?\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"\'_]+\]\s*$")
 indexed_assignment_pattern = re.compile(r"^(?:[\w_]+\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"_]+\]):.+$")
 # list_assignment_pattern = re.compile(r"^[\w\s_]+:\s?\[[\w\s()\[\]+*\-/.,^%!|&\"_]+(?:\sfor\s)[\w\s,_]+(?:\sin\s)[\w\s()\[\]+*\-/.,^%!|&\"_]+\]\s*$")
 list_exec_pattern = re.compile(r"^\[[\w\s(){}@$;\[\]+*\-/.,<>^%=!|&\"_]+\]\s*$")
@@ -57,10 +57,17 @@ def parse(line, inner=True):
                     exec.commands.get(com)(*args, **kwargs)
             elif re.match(assignment_pattern, ln):
                 parts = re.split(r"[\s]+", ln.replace(":", " "))
+                const_var = False
+                if parts[1][0] == '=':
+                    const_var = True
+                    parts[1] = parts[1][1: len(parts[1])]
                 if re.match(list_assignment_pattern, ln):
                     _, list_comps = lst.separate_list_comp(' '.join(parts[1: len(parts)]), clean=True)
-                    lst_var = lst.make_list(list_comps[0], loc_cmds)
-                    exec.addl(parts[0], lst_var, loc_cmds)
+                    lst_var = lst.make_list(list_comps[0], loc_cmds, const=const_var)
+                    if const_var:
+                        exec.addcl(parts[0], lst_var, loc_cmds)
+                    else:
+                        exec.addl(parts[0], lst_var, loc_cmds)
                 elif re.fullmatch(indexed_assignment_pattern, ln):
                     for cmd in loc_cmds:
                         parse(cmd)
@@ -69,15 +76,18 @@ def parse(line, inner=True):
                     index = f.execute(f.Node.init_root("temp", funcs[0], []))
                     if not isinstance(index, (int, float)):
                         raise Exception("index is not a number")
-                    new_value = f.execute(f.Node.init_root("temp", parts[1], []))
-                    if not isinstance(new_value, (int, float)):
-                        raise Exception("new indexed value is not a number")
-                    lst_var[index] = new_value
+                    if const_var:
+                        lst_var[index] = f.nodefy(f.execute(f.Node.init_root("temp", parts[1], [])))
+                    else:
+                        lst_var[index] = f.Node.init_root("temp", parts[1], [])
                 else:
                     for cmd in loc_cmds:
                         parse(cmd)
                     if len(parts) == 2 and (re.match(number_pattern, parts[1]) or re.match(exec_pattern, parts[1])):
-                        exec.addv(*parts)
+                        if const_var:
+                            exec.addcv(*parts)
+                        else:
+                            exec.addv(*parts)
                     elif len(parts) >= 3 and re.match(func_pattern, parts[-1]):
                         exec.addf(*parts)
                     else:
@@ -93,14 +103,15 @@ def parse(line, inner=True):
                         function = f.Node.init_root("temp", ln, [])
                         result = f.execute(function)
                 if isinstance(result, list):
-                    # print([str(n) for n in result])
-                    result = [n.data for n in result]
+                    result = [f.execute(n) if isinstance(n, f.Node) else n for n in result]
+                if isinstance(result, f.Node):
+                    result = f.execute(result)
                 print(result)
                 pyperclip.copy(str(result))
                 results.append(result)
             elif re.fullmatch(list_exec_pattern, ln):
                 result = lst.make_list(lst.separate_list_comp(ln, clean=True)[1][0], loc_cmds)
-                _result = [n.data for n in result]
+                _result = [f.execute(n) if isinstance(n, f.Node) else n for n in result]
                 print(_result)
                 pyperclip.copy(str(_result))
                 results.append(_result)

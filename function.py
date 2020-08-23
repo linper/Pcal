@@ -53,16 +53,6 @@ class Node:
                     root.parameters.update({params[i]: params[i]})
         init_tree(root, data, 0, root.parameters)
         return root
-        # root = Node()
-        # root.name = name
-        # for i in params:
-        #     root.parameters.update({i: i})
-        # root.data_as_str = str(data)
-        # init_tree(root, data, 0, root.parameters)
-        # for i in range(len(params) * strict):
-        #     if not re.search(r"(?:(?:[(,+\-*|&/><=^])|(?:^))" + params[i] + r"(?:(?:[),+\-*|&/><=^])|(?:$))", root.data_as_str):
-        #         raise Exception(f"there is no \"{params[i]}\" in function: {data}")
-        # return root
 
     def __str__(self): # todo list printing format is horible
         if len(self.parameters.keys()) != 0 and self.name is not None:
@@ -73,9 +63,6 @@ class Node:
             return f"{self.name}: {self.data}"
         else:
             return f"{self.data}"
-
-    # def get_data(self):
-    #     return self.data
 
     def __contains__(self, item):
         if self.data == item:
@@ -97,19 +84,10 @@ class Node:
             return iterate(self, args[0])
 
 
-def nodefy(value, params=None):
-    """"if value is not a Node turns it to Node"""
-    if value is None:
-        return None
-    if params is None:
-        params = {}
-    if not isinstance(value, Node):
-        value = Node(value, params=params)
-    return value
-
-
 def execute(root):
     """"function tree execution entry point"""
+    if isinstance(root, (int, float, str)):
+        return root
     d = {}
     if isinstance(root.data, Node):
         for k, v in zip(root.data.parameters.keys(), root.nodes):
@@ -117,6 +95,7 @@ def execute(root):
         return root.data(d)
     else:
         return iterate(root, d)
+
 
 
 def iterate(root, params):
@@ -129,18 +108,30 @@ def iterate(root, params):
             l.append(iterate(n, params))
         if isinstance(root.data, list):
             return root.data[int(l[0])]
-        l = [item.data if isinstance(item, Node) else item for item in l]
+        l = [execute(item) if isinstance(item, Node) else item for item in l]
         return root.data(*l)
     elif params.keys().__contains__(str(root.data)):
         return params.get(str(root.data))
-    else:
+    elif isinstance(root.data, (int, float, str)):
         return root.data
+    else:
+        return iterate(root.data, {})
+
+
+def nodefy(value, params=None):
+    """"if value is not a Node turns it to Node"""
+    if value is None:
+        return None
+    if params is None:
+        params = {}
+    if not isinstance(value, Node):
+        value = Node(value, params=params)
+    return value
 
 
 def init_tree(root, data, level, params):
     """"creates inner function"""
     leftover, funcs = strip_functions(data, "([", ")]", "#")
-    # leftover, funcs = strip_functions(data)
     leftover = swap_std_exp(leftover, params)
     leftover = leftover.replace("@", "")
     return pass_levels(root, leftover, funcs, level, params)
@@ -155,10 +146,8 @@ def pass_levels(parent, data, inner, level, params):
         parent.data = func[0]
         if tree:
             f_data, f_list = strip_functions(inner[0], "([", ")]", "#")
-            # f_data, f_list = strip_functions(inner[0])
             f_data = re.split(r",", f_data)
             funs = dress_up_functions(f_data, f_list)
-            # if len(funs) > max_nodes:
             if count_nodes(func[0], funs, params) > max_nodes:
                 raise Exception("out of nodes")
             for i in range(len(funs)):
@@ -212,11 +201,7 @@ def add_single(parent, data, params):
     par = re.split(r",", data)
     for p in par:
         result = nodefy(var_from_str(p, params, node_return=True), params=params)
-        # result = var_from_str(p, params, node_return=True)
-        # if not isinstance(result, Node):
-        #     result = Node(result, params=params)
         parent.nodes.append(result)
-        # parent.nodes.append(Node(var_from_str(p, params), params=params))
 
 
 def get_level(data, level):
@@ -409,7 +394,7 @@ def var_from_str(data, params=None, force_ex=True, node_return=False):
         return sign * exec.data.get("const").get(data)
     elif len(data) != 0 and exec.data.get("var").keys().__contains__(data):
         if not node_return:
-            return sign * exec.data.get("var").get(data).data
+            return sign * execute(exec.data.get("var").get(data))
         else:
             if sign == -1:
                 return Node.init_root("neg_f", "0-" + data, [])
@@ -445,7 +430,6 @@ def swap_std_exp(data, params):
                     start = s+1
             if not changed:
                 return data
-                # raise Exception("Syntax error in std expression")
     return new_data
 
 
