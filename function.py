@@ -80,6 +80,13 @@ class Node:
             for k, n in zip(self.data.parameters.keys(), self.nodes):
                 d.update({k: iterate(n, args[0])})
             return self.data(d)
+        elif not isinstance(args[0], dict):
+            for k, n in zip(self.parameters.keys(), args):
+                if isinstance(n, Node):
+                    d.update({k: iterate(n, {})})
+                else:
+                    d.update({k: n})
+            return iterate(self, d)
         else:
             return iterate(self, args[0])
 
@@ -95,7 +102,6 @@ def execute(root):
         return root.data(d)
     else:
         return iterate(root, d)
-
 
 
 def iterate(root, params):
@@ -114,6 +120,8 @@ def iterate(root, params):
         return params.get(str(root.data))
     elif isinstance(root.data, (int, float, str)):
         return root.data
+    elif isinstance(root.data, list):
+        return [iterate(d, {}) for d in root.data]
     else:
         return iterate(root.data, {})
 
