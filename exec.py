@@ -114,6 +114,26 @@ def pow(*args):
     return s
 
 
+def ln(*args):
+    args = __flatten_args(args)
+    return math.log(math.e, args[0])
+
+
+def log10(*args):
+    args = __flatten_args(args)
+    return math.log(10, args[0])
+
+
+def log2(*args):
+    args = __flatten_args(args)
+    return math.log(2, args[0])
+
+
+def log(*args):
+    args = __flatten_args(args)
+    return math.log(args[1], args[0])
+
+
 def abs(*args):
     args = __flatten_args(args)
     return math.fabs(args[0])
@@ -227,15 +247,16 @@ def _str(*args):
 list_funs = [subl, forward, fill]  # iterable arguments will not be flattened
 funs = {"|": (b_or, 2), "&": (b_and, 2), "^": (b_xor, 2), "==": (b_eq, 2), "!=": (b_not, 2), "!": (b_not, 1),
         "<": (lt, 2), "<=": (le, 2), ">": (gt, 2), ">=": (ge, 2),
-        "+": (sum, 256), "-": (sub, 256), "/": (div, 256), "%": (mod, 256), "*": (mul, 256), "**": (pow, 32),
+        "+": (sum, 4096), "-": (sub, 4096), "/": (div, 4096), "%": (mod, 4096), "*": (mul, 4096), "**": (pow, 32),
         "or": (b_or, 2), "and": (b_and, 2), "xor": (b_xor, 2), "eq": (b_eq, 2), "nq": (b_not, 2), "not": (b_not, 1),
         "lt": (lt, 2), "le": (le, 2), "gt": (gt, 2), "ge": (ge, 2),
-        "sum": (sum, 256), "sub": (sub, 256), "div": (div, 256), "mod": (mod, 256), "mul": (mul, 256), "pow": (pow, 32), "abs": (abs, 1),
+        "sum": (sum, 4096), "sub": (sub, 4096), "div": (div, 4096), "mod": (mod, 4096), "mul": (mul, 4096), "pow": (pow, 64), "abs": (abs, 1),
         "tan": (tan, 1), "atan": (atan, 1), "sin": (sin, 1), "asin": (asin, 1), "cos": (cos, 1), "acos": (acos, 1),
+        "ln": (ln, 1), "log2": (log2, 1), "log10": (log10, 1), "log": (log, 2),
         "rad": (rad, 1), "deg": (deg, 1),
         "floor": (floor, 1), "ceil": (ceil, 1),
         "forward": (forward, 1), "subl": (subl, 4), "range": (_range, 3), "len": (length, float("inf")), "cat": (cat, float("inf")),
-        "fill": (fill, 2), "str": (_str, 256), "mean": (mean, 256)}
+        "fill": (fill, 2), "str": (_str, 4096), "mean": (mean, 4096)}
 
 # constants
 pi = math.pi

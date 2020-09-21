@@ -59,5 +59,11 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(p.parse("g:3; f:g; g:5; f; rm g; rm f", False), [5])
         self.assertEqual(p.parse("g:3; f:=g; g:5; f; rm g; rm f", False), [3])
 
+
+    def test_mic(self):
+        self.assertEqual(p.parse("-(12)", False), [-12])
+        self.assertEqual(p.parse("--(12)", False), [12])
+        self.assertEqual(p.parse("-(-12)", False), [12])
+
 if __name__ == '__main__':
     unittest.main()

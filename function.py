@@ -14,8 +14,8 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
-level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "*", "/", "%", "**", ""]
+levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"^-+[\w#_]", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
+level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "-", "*", "/", "%", "**", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
@@ -240,18 +240,24 @@ def get_level(data, level):
                     raise Exception("excess of operators")
             elif matcher == "-":
                 pre_fixed = []
+                first = False
                 for i in range(len(strings)):
                     if strings[i] == "":
                         is_empty = True
                         count += 1
+                        if i == 0:
+                            first = True
                     elif is_empty:
                         if count % 2 == 0:
                             pre_fixed.append(strings[i])
                         else:
-                            if len(pre_fixed) > 0:
-                                pre_fixed[-1] = pre_fixed[-1] + "+" + strings[i]
+                            if len(pre_fixed) > 0 or first:
+                                if first:
+                                    pre_fixed.append("0")
+                                pre_fixed[-1] = pre_fixed[-1] + "-" + strings[i]
                             else:
                                 pre_fixed.append(strings[i])
+                        first = False
                         is_empty = False
                         count = 0
                     else:
