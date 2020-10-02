@@ -14,14 +14,16 @@ integer_pattern = re.compile(r"(^[-+]?[0-9]*$)")
 float_pattern = re.compile(r"(^[-+]?[0-9]*\.[0-9]+$)")
 std_pattern = re.compile(r"(^[-+]?[0-9]*\.?[0-9]+e[-]?[0-9]+$)")
 std_enhanced_pattern = re.compile(r"([-]?[\w\d_.#]+e[-]?[\w\d_.#]+)")
-levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"^-+[\w#_]", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
-level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "-", "*", "/", "%", "**", ""]
+levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
+level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "*", "/", "%", "**", ""]
+# levels = [r"(?:>=)", r">", r"(?:<=)", r"<", r"(?:!=)", r"(?:==)", r"\|", r"\&", r"\^", r"\+", r"[\w\d_#]-", r"^-+[\w#_]", r"[^*](\*)[^*]", r"\/", r"%", r"(?:\*\*)", r"[\d\w_]+#"]
+# level_str = [">=", ">", "<=", "<", "!=", "==", "|", "&", "^", "+", "-", "-", "*", "/", "%", "**", ""]
 basic_multi = re.compile(r"-?[\w\d_.,]+")
 basic = re.compile(r"-?[\w\d_.]+")
 func_pattern = re.compile(r"[\d\w_]*#")
 single_eq_pattern = re.compile(r"[^!<>=](?:=)[^=]")
 bad_eq_pattern = re.compile(r"^[=]")
-
+operators = re.compile(r"[><+=|&^*/%!]")
 
 class Node:
     """node of function tree"""
@@ -139,8 +141,9 @@ def nodefy(value, params=None):
 
 def init_tree(root, data, level, params):
     """"creates inner function"""
+    data = swap_std_exp(data, params)
+    data = parse_pluses_minuses(data)
     leftover, funcs = strip_functions(data, "([", ")]", "#")
-    leftover = swap_std_exp(leftover, params)
     leftover = leftover.replace("@", "")
     return pass_levels(root, leftover, funcs, level, params)
 
@@ -232,46 +235,20 @@ def get_level(data, level):
         for s in strings:
             if re.match(bad_eq_pattern, s):
                 raise Exception("bad (not)equality pattern")
+        if matcher == "-":
+            new_str = [strings[0]]
+            for s in strings[1:]:
+                if re.match(operators, new_str[-1][-1]):
+                    new_str[-1] = "".join([new_str[-1], "-", s])
+                else:
+                    new_str.append(s)
+            strings = new_str
         if strings.__contains__(""):
             count = 0
             is_empty = False
             if ["+", "|", "&", "^", "<", ">"].__contains__(matcher):
                 if strings.__contains__(""):
                     raise Exception("excess of operators")
-            elif matcher == "-":
-                pre_fixed = []
-                first = False
-                for i in range(len(strings)):
-                    if strings[i] == "":
-                        is_empty = True
-                        count += 1
-                        if i == 0:
-                            first = True
-                    elif is_empty:
-                        if count % 2 == 0:
-                            pre_fixed.append(strings[i])
-                        else:
-                            if len(pre_fixed) > 0 or first:
-                                if first:
-                                    pre_fixed.append("0")
-                                pre_fixed[-1] = pre_fixed[-1] + "-" + strings[i]
-                            else:
-                                pre_fixed.append(strings[i])
-                        first = False
-                        is_empty = False
-                        count = 0
-                    else:
-                        pre_fixed.append(strings[i])
-                fixed = [pre_fixed[0]]
-                index = 0
-                pre_index = 2
-                while pre_index < len(pre_fixed):
-                    if re.match(r"[\w\d_]", fixed[index][-1]):
-                        fixed.append(pre_fixed[pre_index])
-                        index += 1
-                    else:
-                        fixed[index] = fixed[index] + "-" + pre_fixed[pre_index]
-                    pre_index += 1
             elif matcher == "*":
                 for i in range(len(strings)):
                     if strings[i] == "":
@@ -437,7 +414,7 @@ def swap_std_exp(data, params):
                 try:
                     first = var_from_str(d[start:s], params)
                     second = var_from_str(d[s+1:], params)
-                    replacement = str(first) + "*10**" + str(second)
+                    replacement = "(" + str(first) + "*10**" + str(second) + ")"
                     new_data = data.replace(d, replacement)
                     changed = True
                 except Exception:
@@ -465,3 +442,24 @@ def get_index(data):
     c_br = [i for i, v in enumerate(data) if v == ']']
     return data[o_br[0] + 1:c_br[-1]]
 
+
+def parse_pluses_minuses(data):
+    """"function removes unnecessary pluses and minuses"""
+    new_data = []
+    for i, c in enumerate(data):
+        if c == '+' and (len(new_data) == 0 or re.match(operators, new_data[-1])):
+            continue
+        elif c == '-':
+            if i == 0:
+                new_data.append('0')
+                new_data.append('-')
+            elif new_data[-1] == '-':
+                new_data[-1] = '+'
+            elif new_data[-1] == '+':
+                new_data[-1] = '-'
+            else:
+                new_data.append('-')
+        else:
+            new_data.append(c)
+    new_data_string = "".join(new_data)
+    return new_data_string
